@@ -1,0 +1,30 @@
+{
+  "name": "improjam",
+  "version": "1.0.0",
+  "description": "MIDI sequencer dreamcode",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/halfbyte/improjam.git"
+  },
+  "keywords": [
+    "midi",
+    "webmidi",
+    "music"
+  ],
+  "author": "Jan Krutisch <jan@krutisch.de>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/halfbyte/improjam/issues"
+  },
+  "homepage": "https://github.com/halfbyte/improjam#readme",
+  "dependencies": {
+    "ableton-push-canvas-display": "^1.0.0",
+    "electron": "^2.0.2",
+    "mime-types": "^2.1.18"
+  }
+}
