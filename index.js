@@ -5,6 +5,10 @@ const path = require('path')
 const {app, BrowserWindow, protocol} = require('electron')
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
+
+// require('electron-reload')(__dirname);
+
+
 let mainWindow
 
 const base = app.getAppPath();

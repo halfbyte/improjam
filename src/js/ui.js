@@ -14,8 +14,11 @@ export default class UI{
     this.updateCanvasUI = this.updateCanvasUI.bind(this)
     this.uiWorker = new Worker('js/ui-worker.js')
     this.uiWorker.onmessage = (event) => {
-      if (event.data == 'update-ui') {
-        this.updateCanvasUI()
+      if (event.data === 'update-ui') {
+        requestAnimationFrame(() => {
+          this.updateCanvasUI()
+        })
+        
       }
     }
   }
