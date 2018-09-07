@@ -88,7 +88,7 @@ class Sequencer {
         // pattern to start at
         firstPattern: 0,
         // pattern to end with
-        length: 1,
+        length: 2,
         // actual pattern data.
         data: [] 
       }
@@ -127,7 +127,7 @@ class Sequencer {
           if (track.data[tick]) {
             track.data[tick].forEach((event) => {
               if (event.type === 'note') {
-                console.log(time, this.tick + i, tick)
+                
                 this.sendNote(t, time, event.note, event.velocity, event.length * perTick)
               }  
             })
@@ -136,7 +136,6 @@ class Sequencer {
         }
     
       }
-      console.log("STARTING AT", this.tick, i, this.tick / (16*24))    
       this.tick += i
       this.nextTime += (perTick * 48)
       if (this.tick >= (256*24)) { this.tick = 0 }
@@ -169,7 +168,7 @@ class MIDISystem extends Eventable {
     this.sequencer.tracks[0].data[0] = [{
       type: 'note',
       note: 48,
-      length: 24, // four quarter notes
+      length: 6, // four quarter notes
       velocity: 100
     },{
       type: 'note',
@@ -224,15 +223,86 @@ class MIDISystem extends Eventable {
     this.trigger(`device-message.${event.target.name}`, event.data, event.target.name)
   }
   channelMessage(channel, data, deviceName) {
-    // do nothing right now
+    if (data[0] === 248) { return; }
+    console.log(channel, data, deviceName)
   }
   sendChannelMessage(track, data, time) {
+    
+    data[0] = data[0] | this.channels[track].outputChannel
     this.outputs[this.channels[track].outputDevice].send(data, time)
+  }
+}
+const m = require('mithril')
+
+class DeviceSelector {
+  constructor(vnode) {
+    this.options = vnode.attrs.options
+    this.value = vnode.attrs.value
+    this.onchange = vnode.attrs.onchange
+  }
+  view(vnode) {
+    
+    return m('select', {onchange: (event) => this.change(event)}, this.options.map((option) => {
+      const optname = option === -1 ? 'Any' : option
+      return m('option', {value: option, selected: option === vnode.attrs.value}, optname)
+    }))
+  }
+  change(event) {
+    if (this.onchange) {
+      this.onchange(event.target.value)
+    }
+  }
+}
+
+class ChannelSelector {
+  constructor(vnode) {
+    this.opts = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    this.names = this.opts.map((opt) => opt + 1)
+    if (vnode.attrs.showAny) {
+      this.opts = [-1].concat(this.opts)
+      this.names = ['Any'].concat(this.names)
+    }
+    this.onchange = vnode.attrs.onchange
+  }
+  view(vnode) {
+    return m('select', {onchange: (event) => this.change(event)}, this.opts.map((option, i) => {
+      return m('option', {value: option, selected: option === vnode.attrs.value}, this.names[i])
+    }))
+  }
+  change(event) {
+    if (this.onchange) {
+      this.onchange(parseInt(event.target.value, 10))
+    }
+  }
+}
+
+
+class AppC {
+  constructor(vnode) {
+    this.system = vnode.attrs.system
+    this.allOutputs = Object.keys(this.system.outputs)
+    this.allOutputsPlusAny = [ANY].concat(this.allOutputs)
+  }
+  view() {
+    return [
+      m('h2', 'Channels'),
+      m('div', this.system.channels.map((channel, i) => {
+        return m('div', [
+          m(DeviceSelector, {options: this.allOutputsPlusAny, value: channel.inputDevice, onchange(val) { channel.inputDevice = val }}),
+          m(ChannelSelector, {showAny: true, value: channel.inputChannel, onchange(val) { channel.inputChannel = val }}),  
+          ' > ',
+          m(DeviceSelector, {options: Object.keys(this.system.outputs), channel: channel, onchange(val) { channel.outputDevice = val }}),
+          m(ChannelSelector, {value: channel.outputChannel, onchange(val) { channel.outputChannel = val }})
+        ])
+      }))
+    ]
   }
 }
 
 navigator.requestMIDIAccess().then((access) => {
   const midiSystem = new MIDISystem(access)
+  const root = document.getElementById('root')
+  m.render(root, m(AppC, {system: midiSystem}))
 }).catch( (error) => {
   console.error(error)
 })

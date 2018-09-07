@@ -24,7 +24,11 @@
   "homepage": "https://github.com/halfbyte/improjam#readme",
   "dependencies": {
     "ableton-push-canvas-display": "^1.0.0",
-    "electron": "^2.0.2",
-    "mime-types": "^2.1.18"
+    "electron-reload": "^1.2.5",
+    "mime-types": "^2.1.18",
+    "mithril": "^1.1.6"
+  },
+  "devDependencies": {
+    "electron": "^2.0.8"
   }
 }
