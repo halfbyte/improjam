@@ -2,3 +2,49 @@
   border: 3px solid red;
   background: #000;
 }
+
+
+.matrix {
+  width: calc(44px * 8);
+}
+
+.matrix-button {
+  border: 1px solid black;
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  float: left;
+  margin: 2px;
+  box-sizing: border-box;
+}
+.matrix-button--off {
+  background: #ccc
+}
+.matrix-button--red {
+  background: #800
+}
+.matrix-button--green {
+  background: #080
+}
+.matrix-button--light-green {
+  background: #0F0
+}
+.matrix-button--blue {
+  background: #008
+}
+.matrix-button--yellow {
+  background: #FF0
+}
+.matrix-button--orange {
+  background: #F80
+}
+.matrix-button--pink {
+  background: #F0F
+}
+.matrix-button--teal {
+  background: #0ff
+}
+.channel-name {
+  display: inline-block;
+  width: 2em;
+}

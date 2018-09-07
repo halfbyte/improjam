@@ -1,3 +1,6 @@
+import AppComponent from './components/app.js'
+const m = require('mithril')
+
 function enumerate(devices) {
   const hash = {}
   devices.forEach((device) => {
@@ -88,9 +91,10 @@ class Sequencer {
         // pattern to start at
         firstPattern: 0,
         // pattern to end with
-        length: 2,
+        length: 1,
         // actual pattern data.
-        data: [] 
+        data: [],
+        mode: 'note',
       }
     }
     this.tempo = 120
@@ -118,12 +122,12 @@ class Sequencer {
   
     if (currentTime > this.nextTime - (perTick * 4)) {
       for(i=0;i<48;i++) {
-        const time = this.nextTime + (perTick * 4)
+        const time = this.nextTime + (perTick * 4 * i)
         for(t=0;t<numTracks;t++) {
           const track = this.tracks[t]
           const trackOffset = track.firstPattern * (16*24)
           const trackLength = track.length * 16 * 24
-          const tick = ((this.tick + i) % trackLength) + trackOffset
+          const tick = ((this.tick + i) % trackLength) + trackOffset          
           if (track.data[tick]) {
             track.data[tick].forEach((event) => {
               if (event.type === 'note') {
@@ -155,6 +159,28 @@ class Sequencer {
       time + length
     )
   }
+  toggleNote(track, time, note, velocity=100, length=24) {
+    console.log("TOGGLE", track, time, note)
+    if (this.tracks[track].data[time]) {
+      console.log(this.tracks[track].data[time])
+      const existing = this.tracks[track].data[time].find((n) => {
+        return n.type === 'note' && n.note == note
+      })
+      if (existing) {
+        this.tracks[track].data[time] = this.tracks[track].data[time].filter((ev) => {
+          return !(ev.type === 'note' && ev.note == note)
+        })
+      } else {
+        this.tracks[track].data[time].push({
+          type: 'note', note: note, velocity: velocity, length: length 
+        })
+      }
+    } else {
+      this.tracks[track].data[time] = [
+        {type: 'note', note: note, velocity: velocity, length: length}
+      ]
+    }
+  }
 }
 
 class MIDISystem extends Eventable {
@@ -165,6 +191,7 @@ class MIDISystem extends Eventable {
     this.setupChannels()
     this.setupListeners()
     this.sequencer = new Sequencer(this, this.channels.length)
+    this.matrixView = new MatrixView(this, this.sequencer)
     this.sequencer.tracks[0].data[0] = [{
       type: 'note',
       note: 48,
@@ -193,8 +220,19 @@ class MIDISystem extends Eventable {
       length: 24, // four quarter notes
       velocity: 100
     }]
-    this.sequencer.start()
     this.sequencer.tracks[0].data[288] = [{
+      type: 'note',
+      note: 48,
+      length: 24, // four quarter notes
+      velocity: 100
+    }]
+    this.sequencer.tracks[0].data[288 + 48] = [{
+      type: 'note',
+      note: 48,
+      length: 24, // four quarter notes
+      velocity: 100
+    }]
+    this.sequencer.tracks[0].data[288 + 96] = [{
       type: 'note',
       note: 48,
       length: 24, // four quarter notes
@@ -224,7 +262,7 @@ class MIDISystem extends Eventable {
   }
   channelMessage(channel, data, deviceName) {
     if (data[0] === 248) { return; }
-    console.log(channel, data, deviceName)
+    //console.log(channel, data, deviceName)
   }
   sendChannelMessage(track, data, time) {
     
@@ -232,77 +270,71 @@ class MIDISystem extends Eventable {
     this.outputs[this.channels[track].outputDevice].send(data, time)
   }
 }
-const m = require('mithril')
 
-class DeviceSelector {
-  constructor(vnode) {
-    this.options = vnode.attrs.options
-    this.value = vnode.attrs.value
-    this.onchange = vnode.attrs.onchange
+class MatrixView {
+
+  constructor(system, sequencer) {
+    this.system = system
+    this.sequencer = sequencer
+    this.leds = []
+    for(var i=0;i<64;i++) { this.leds.push('off') }
+    this.selectedChannel = 0
+    this.selectedPattern = 0
+    this.selectedNote = 0
+    this.noteOffset = 48
   }
-  view(vnode) {
+  refreshLeds() {
+    for(var i=0;i<64;i++) {
+      this.leds[i] = 'off'
+    }
+    const track = this.sequencer.tracks[this.selectedChannel]
+    // active patterns
+    const lastPattern = track.firstPattern + track.length
+    for(var i=track.firstPattern;i<lastPattern;i++) {
+      this.leds[i] = 'red'
+    }
+    this.leds[this.selectedPattern] = 'orange'
     
-    return m('select', {onchange: (event) => this.change(event)}, this.options.map((option) => {
-      const optname = option === -1 ? 'Any' : option
-      return m('option', {value: option, selected: option === vnode.attrs.value}, optname)
-    }))
-  }
-  change(event) {
-    if (this.onchange) {
-      this.onchange(event.target.value)
+    // steps
+    for(var i=0;i<32;i++) {
+      if (track.data[24*(i + (this.selectedPattern * 16))] && track.data[24*(i + (this.selectedPattern * 16))].length > 0) {
+        this.leds[16+i] = 'green'
+      }
+    }
+    this.leds[16 + this.selectedNote] = 'light-green'
+    // notes
+
+    if (track.data[24*(this.selectedNote + (this.selectedPattern * 16))]) {
+      const notes = track.data[24*(this.selectedNote + (this.selectedPattern * 16))]
+      notes.forEach((note) => {
+        this.leds[48 + (note.note - 48)] = 'blue'
+      })
     }
   }
-}
-
-class ChannelSelector {
-  constructor(vnode) {
-    this.opts = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-    this.names = this.opts.map((opt) => opt + 1)
-    if (vnode.attrs.showAny) {
-      this.opts = [-1].concat(this.opts)
-      this.names = ['Any'].concat(this.names)
+  ledState(index) {
+    this.refreshLeds()
+    return this.leds[index]
+  }
+  ledClick(index) {
+    console.log("CLICKED", index)
+    if (index < 16) {
+      this.selectedPattern = index
     }
-    this.onchange = vnode.attrs.onchange
-  }
-  view(vnode) {
-    return m('select', {onchange: (event) => this.change(event)}, this.opts.map((option, i) => {
-      return m('option', {value: option, selected: option === vnode.attrs.value}, this.names[i])
-    }))
-  }
-  change(event) {
-    if (this.onchange) {
-      this.onchange(parseInt(event.target.value, 10))
+    if (index >= 16 && index < 48) {
+      this.selectedNote = index - 16
+    }
+    if (index >= 48) {
+      const time = 24*(this.selectedNote + (this.selectedPattern * 16))
+      this.sequencer.toggleNote(this.selectedChannel, time, index)
     }
   }
-}
-
-
-class AppC {
-  constructor(vnode) {
-    this.system = vnode.attrs.system
-    this.allOutputs = Object.keys(this.system.outputs)
-    this.allOutputsPlusAny = [ANY].concat(this.allOutputs)
-  }
-  view() {
-    return [
-      m('h2', 'Channels'),
-      m('div', this.system.channels.map((channel, i) => {
-        return m('div', [
-          m(DeviceSelector, {options: this.allOutputsPlusAny, value: channel.inputDevice, onchange(val) { channel.inputDevice = val }}),
-          m(ChannelSelector, {showAny: true, value: channel.inputChannel, onchange(val) { channel.inputChannel = val }}),  
-          ' > ',
-          m(DeviceSelector, {options: Object.keys(this.system.outputs), channel: channel, onchange(val) { channel.outputDevice = val }}),
-          m(ChannelSelector, {value: channel.outputChannel, onchange(val) { channel.outputChannel = val }})
-        ])
-      }))
-    ]
-  }
+  
 }
 
 navigator.requestMIDIAccess().then((access) => {
   const midiSystem = new MIDISystem(access)
   const root = document.getElementById('root')
-  m.render(root, m(AppC, {system: midiSystem}))
+  m.mount(root, { view: function() { return m(AppComponent, {system: midiSystem})} })
 }).catch( (error) => {
   console.error(error)
 })
