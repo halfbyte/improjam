@@ -6,6 +6,7 @@
 
 .matrix {
   width: calc(44px * 8);
+
 }
 
 .matrix-button {
@@ -47,4 +48,15 @@
 .channel-name {
   display: inline-block;
   width: 2em;
+}
+
+/* clearfix hack */
+.cf:before,
+.cf:after {
+    content: " "; /* 1 */
+    display: table; /* 2 */
+}
+
+.cf:after {
+    clear: both;
 }

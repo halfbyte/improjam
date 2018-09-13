@@ -1,6 +1,6 @@
 const m = require('mithril')
 
-class DeviceSelector {
+class Select {
   constructor(vnode) {
     this.options = vnode.attrs.options
     this.value = vnode.attrs.value
@@ -17,6 +17,15 @@ class DeviceSelector {
     if (this.onchange) {
       this.onchange(event.target.value)
     }
+  }
+}
+
+class NoteSelect extends Select {
+  constructor(vnode) {
+    super(vnode)
+    this.options = [
+      'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'
+    ]
   }
 }
 
@@ -87,15 +96,27 @@ export default class App {
       m('div', this.system.channels.map((channel, i) => {
         return m('div', [
           m('a', {href: "#", class: 'channel-name', onclick: () => {this.system.matrixView.selectedChannel = i}}, `${i.toString(16).toUpperCase()}`),
-          m(DeviceSelector, {options: this.allOutputsPlusAny, value: channel.inputDevice, onchange(val) { channel.inputDevice = val }}),
+          m(Select, {options: this.allOutputsPlusAny, value: channel.inputDevice, onchange(val) { channel.inputDevice = val }}),
           m(ChannelSelector, {showAny: true, value: channel.inputChannel, onchange(val) { channel.inputChannel = val }}),  
           ' > ',
-          m(DeviceSelector, {options: Object.keys(this.system.outputs), channel: channel, onchange(val) { channel.outputDevice = val }}),
+          m(Select, {options: Object.keys(this.system.outputs), channel: channel, onchange(val) { channel.outputDevice = val }}),
           m(ChannelSelector, {value: channel.outputChannel, onchange(val) { channel.outputChannel = val }})
         ])
       })),
       m('h2', 'Matrix'),
-      m('div', {class: 'matrix'}, m(Matrix, {matrixView: this.system.matrixView}))
+      m('div', {class: 'cf'}, m('div', {class: 'matrix'}, m(Matrix, {matrixView: this.system.matrixView}))),
+      
+      m('h2', 'Scale'),
+      m('div', [
+        m('label', [
+          ' Scale: ', 
+          m(Select, {options: this.system.scaler.SCALES, value: this.system.scaler.currentScale, onchange: (val) => { this.system.scaler.currentScale = val}} ),
+          ' Note: ', 
+          m(Select, {options: this.system.scaler.NOTES, value: this.system.scaler.currentRootNote, onchange: (val) => { this.system.scaler.currentRootNote = val}} ),
+          ' Oct: ', 
+          m(Select, {options: this.system.scaler.OCTAVES, value: this.system.scaler.currentOctave, onchange: (val) => { this.system.scaler.currentOctave = val}} ),
+        ])
+      ])
     ]
   }
 }

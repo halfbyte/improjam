@@ -39,3 +39,8 @@ After adding the UI for configuring the channel params (Mostly which devices and
 
 I think the next step could be to prototype the note editor, which involves entering notes in different scales. Main point of orientation will be the Note editor from Circuit, because that works well for me, but one question I need to settle on is if I want the used scale to be a global parameter where changing the scale also changes the notes already in the sequencer or if I want to follow ableton's approach and simply save the exact notes and leave them as is when playing. This would allow for more flexibility but also makes it harder to completely switch the key in the middle of a song if you want to.
 
+## Scaler POC (2018-09-13)
+
+One of the key elements of the note editor is the possibility to enter notes in various scales effectively. Like I said last time, I'll model this losely after the Circuit editor, because I like how it works. Today I've started to work on the piece of code that will translate from a position on the matrix to the actual note value and vice versa. I call this piece the scaler. The UI portion is kept in the MatrixView class. It was relatively straight forward with the exception of the overlapping notes that are also featured on the Circuit. The base note of the scale is present on both edges of the matrix, so that if you select the base note on the upper row, the last LED in the top row has to light up as well. The code for this is terrible and made me question my approach, but it works for now...
+
+I should probably start on the Push integration soon...

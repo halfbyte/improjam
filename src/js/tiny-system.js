@@ -1,6 +1,15 @@
 import AppComponent from './components/app.js'
 const m = require('mithril')
-
+const SCALES = ['chromatic', 'min', 'min-m', 'min-h', 'maj']
+const SCALEMAPS = {
+  'chromatic': [0,1,2,3,4,5,6,7,8,9,10,11],
+  'min': [0, 2, 3, 5, 7, 8, 10],
+  'min-h': [0, 2, 3, 5, 7, 8, 11],
+  'min-m': [0, 2, 3, 5, 7, 9, 11],
+  'maj': [0, 2, 4, 5, 7, 9, 100],
+}
+const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+const OCTAVES = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 function enumerate(devices) {
   const hash = {}
   devices.forEach((device) => {
@@ -183,6 +192,38 @@ class Sequencer {
   }
 }
 
+class Scaler {
+  constructor() {
+    this.SCALES = SCALES
+    this.SCALEMAPS = SCALEMAPS
+    this.NOTES = NOTES
+    this.OCTAVES = OCTAVES
+    this.currentScale = 'min'
+    this.currentRootNote = 'C'
+    this.currentOctave = 3
+  }
+  note(row, pos) {
+    // TODO: Build chromatic mode
+    const map = this.SCALEMAPS[this.currentScale] || this.SCALEMAPS['chromatic']
+    const rootNote = this.NOTES.indexOf(this.currentRootNote)
+    const noteInRow = map[pos % 7]
+    const extraRow = Math.floor(pos / 7)
+    const octaveNote = (this.currentOctave + extraRow + row + 1) * 12
+    return octaveNote + rootNote + noteInRow
+  }
+  rowAndPos(note) {
+    // TODO: Build chromatic mode
+    const map = this.SCALEMAPS[this.currentScale] || this.SCALEMAPS['chromatic']
+    const rootNote = this.NOTES.indexOf(this.currentRootNote)
+    const octaveNote = (this.currentOctave + 1) * 12
+    const baseNote = note - octaveNote - rootNote
+    
+    const row = 1 - Math.floor(baseNote / 12)
+    const noteInOct = note % 12
+    return [row, map.indexOf(noteInOct)]
+  }
+}
+
 class MIDISystem extends Eventable {
   constructor(midiAccess) {
     super()
@@ -190,6 +231,8 @@ class MIDISystem extends Eventable {
     this.outputs = enumerate(midiAccess.outputs)
     this.setupChannels()
     this.setupListeners()
+    this.scaler = new Scaler()
+    this.SCALES = SCALES
     this.sequencer = new Sequencer(this, this.channels.length)
     this.matrixView = new MatrixView(this, this.sequencer)
     this.sequencer.tracks[0].data[0] = [{
@@ -199,7 +242,7 @@ class MIDISystem extends Eventable {
       velocity: 100
     },{
       type: 'note',
-      note: 48 + 3,
+      note: 60 + 3,
       length: 24, // four quarter notes
       velocity: 100
     },{
@@ -307,7 +350,24 @@ class MatrixView {
     if (track.data[24*(this.selectedNote + (this.selectedPattern * 16))]) {
       const notes = track.data[24*(this.selectedNote + (this.selectedPattern * 16))]
       notes.forEach((note) => {
-        this.leds[48 + (note.note - 48)] = 'blue'
+        const [row, pos] = this.system.scaler.rowAndPos(note.note)
+        console.log(row, pos)
+        if (pos != null) {
+          if (row >= 0 && row <= 1 && pos > 0) {            
+            this.leds[48 + ((row) * 8) + pos] = 'blue'            
+          } else if (pos === 0) {
+            if (row === -1) {
+              this.leds[48 + 7] = 'blue'
+            } else if (row === 0) {
+              this.leds[48 +  8 + 7] = 'blue'
+              this.leds[48] = 'blue'
+            } else if (row === 1) {
+              this.leds[48 + 8] = 'blue'
+            }
+          }
+              
+        } 
+        
       })
     }
   }
@@ -325,7 +385,11 @@ class MatrixView {
     }
     if (index >= 48) {
       const time = 24*(this.selectedNote + (this.selectedPattern * 16))
-      this.sequencer.toggleNote(this.selectedChannel, time, index)
+      const row = 1 - Math.floor((index - 48) / 8)
+      const pos = index % 8
+      console.log(row, pos)
+      const note = this.system.scaler.note(row, pos)
+      this.sequencer.toggleNote(this.selectedChannel, time, note)
     }
   }
   
