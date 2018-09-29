@@ -1,5 +1,11 @@
 import AppComponent from './components/app.js'
+import PushDriver from './push-driver.js'
+import PushDisplay from './push-display.js'
+import Eventable from './eventable.js'
+
+
 const m = require('mithril')
+
 const SCALES = ['chromatic', 'min', 'min-m', 'min-h', 'maj']
 const SCALEMAPS = {
   'chromatic': [0,1,2,3,4,5,6,7,8,9,10,11],
@@ -13,7 +19,10 @@ const OCTAVES = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 function enumerate(devices) {
   const hash = {}
   devices.forEach((device) => {
-    hash[device.name] = device
+    if (!device.name.match(/Ableton Push/)) {
+      hash[device.name] = device  
+    }
+    
   })
   return hash
 }
@@ -60,35 +69,6 @@ class Channel {
   }
 }
 
-class Eventable {
-  constructor() {
-    this.listeners = {}
-  }
-  on(event, callback) {
-    if (this.listeners[event] == null) {
-      this.listeners[event] = new Set()
-    }
-    this.listeners[event].add(callback)
-  }
-  off(event, callback) {
-    this.listeners[event].delete(callback)
-  }
-  /* Remove all instances of this callback */
-  remove(callback) {
-    Object.keys(this.listeners).forEach((key) => {
-      if (this.listeners[key] && this.listeners[key].size > 0) {
-        this.listeners[key].delete(callback)
-      }
-    })
-  }
-  trigger(event, ...data) {
-    if (this.listeners[event] && this.listeners[event].size > 0) {
-      this.listeners[event].forEach((callback) => {
-        callback(...data)
-      })
-    }
-  }
-}
 
 class Sequencer {
   constructor(system, numChannels) {
@@ -169,9 +149,7 @@ class Sequencer {
     )
   }
   toggleNote(track, time, note, velocity=100, length=24) {
-    console.log("TOGGLE", track, time, note)
     if (this.tracks[track].data[time]) {
-      console.log(this.tracks[track].data[time])
       const existing = this.tracks[track].data[time].find((n) => {
         return n.type === 'note' && n.note == note
       })
@@ -222,11 +200,21 @@ class Scaler {
     const noteInOct = note % 12
     return [row, map.indexOf(noteInOct)]
   }
+  octaveUp() {
+    this.currentOctave++
+    if (this.currentOctave > 10) { this.currentOctave = 10 }
+  }
+  octaveDown() {
+    this.currentOctave--
+    if (this.currentOctave < 0) { this.currentOctave = 0 }
+  }
 }
 
 class MIDISystem extends Eventable {
   constructor(midiAccess) {
     super()
+    this.pushDriver = new PushDriver(midiAccess)
+    this.PushDisplay = new PushDisplay()
     this.inputs = enumerate(midiAccess.inputs)
     this.outputs = enumerate(midiAccess.outputs)
     this.setupChannels()
@@ -282,6 +270,7 @@ class MIDISystem extends Eventable {
       velocity: 100
     }]
     this.sequencer.start()
+    this.setupPushBindings()
   }
   setupChannels() {
     let i;
@@ -312,6 +301,20 @@ class MIDISystem extends Eventable {
     data[0] = data[0] | this.channels[track].outputChannel
     this.outputs[this.channels[track].outputDevice].send(data, time)
   }
+  setupPushBindings() {
+    this.pushDriver.on('push:function:on', (fun, ...params) => {
+      if (fun === 'octave') {
+        if (params[0] == 'up') {
+          this.scaler.octaveUp()
+          m.redraw()
+        }
+        if (params[0] == 'down') {
+          this.scaler.octaveDown()
+          m.redraw()
+        }
+      }
+    })
+  }
 }
 
 class MatrixView {
@@ -325,6 +328,9 @@ class MatrixView {
     this.selectedPattern = 0
     this.selectedNote = 0
     this.noteOffset = 48
+    this.system.pushDriver.on('push:matrix:on', (led) => {
+      this.ledClick(led)
+    })
   }
   refreshLeds() {
     for(var i=0;i<64;i++) {
@@ -351,7 +357,6 @@ class MatrixView {
       const notes = track.data[24*(this.selectedNote + (this.selectedPattern * 16))]
       notes.forEach((note) => {
         const [row, pos] = this.system.scaler.rowAndPos(note.note)
-        console.log(row, pos)
         if (pos != null) {
           if (row >= 0 && row <= 1 && pos > 0) {            
             this.leds[48 + ((row) * 8) + pos] = 'blue'            
@@ -373,10 +378,11 @@ class MatrixView {
   }
   ledState(index) {
     this.refreshLeds()
+    this.system.pushDriver.setMatrix(this.leds)
     return this.leds[index]
+    
   }
-  ledClick(index) {
-    console.log("CLICKED", index)
+  ledClick(index, velocity=100) {
     if (index < 16) {
       this.selectedPattern = index
     }
@@ -387,10 +393,10 @@ class MatrixView {
       const time = 24*(this.selectedNote + (this.selectedPattern * 16))
       const row = 1 - Math.floor((index - 48) / 8)
       const pos = index % 8
-      console.log(row, pos)
       const note = this.system.scaler.note(row, pos)
-      this.sequencer.toggleNote(this.selectedChannel, time, note)
+      this.sequencer.toggleNote(this.selectedChannel, time, note, velocity)
     }
+    m.redraw()
   }
   
 }

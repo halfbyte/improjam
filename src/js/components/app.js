@@ -60,7 +60,7 @@ class MatrixButton {
     this.index = vnode.attrs.index
   }
   view(vnode) {
-    return m('a', {href: '#', class: `matrix-button matrix-button--${vnode.attrs.ledState}`, onclick: () => {this.onclick(this.index)}})
+    return m('button', {class: `matrix-button matrix-button--${vnode.attrs.ledState}`, onclick: () => {this.onclick(this.index)}})
   }
 }
 
