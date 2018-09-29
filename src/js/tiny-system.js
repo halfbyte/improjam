@@ -299,7 +299,9 @@ class MIDISystem extends Eventable {
   sendChannelMessage(track, data, time) {
     
     data[0] = data[0] | this.channels[track].outputChannel
-    this.outputs[this.channels[track].outputDevice].send(data, time)
+    if (this.outputs[this.channels[track].outputDevice]) { 
+      this.outputs[this.channels[track].outputDevice].send(data, time)
+    }
   }
   setupPushBindings() {
     this.pushDriver.on('push:function:on', (fun, ...params) => {
@@ -353,21 +355,30 @@ class MatrixView {
     this.leds[16 + this.selectedNote] = 'light-green'
     // notes
 
+    for(var i=0;i<16;i++) {
+      if (i % 8 === 0 || i % 8 === 7) {
+        this.leds[48 + i] = 'dark-teal'
+
+      } else {
+        this.leds[48 + i] = 'blue'
+      }
+    }
+
     if (track.data[24*(this.selectedNote + (this.selectedPattern * 16))]) {
       const notes = track.data[24*(this.selectedNote + (this.selectedPattern * 16))]
       notes.forEach((note) => {
         const [row, pos] = this.system.scaler.rowAndPos(note.note)
         if (pos != null) {
-          if (row >= 0 && row <= 1 && pos > 0) {            
-            this.leds[48 + ((row) * 8) + pos] = 'blue'            
+          if (row >= 0 && row <= 1 && pos > 0) {
+            this.setNote(48 + ((row) * 8) + pos)            
           } else if (pos === 0) {
             if (row === -1) {
-              this.leds[48 + 7] = 'blue'
+              this.setNote(48 + 7)
             } else if (row === 0) {
-              this.leds[48 +  8 + 7] = 'blue'
-              this.leds[48] = 'blue'
+              this.setNote(48 + 8 + 7)
+              this.setNote(48)
             } else if (row === 1) {
-              this.leds[48 + 8] = 'blue'
+              this.setNote(48 + 8)
             }
           }
               
@@ -375,6 +386,10 @@ class MatrixView {
         
       })
     }
+  }
+  setNote(pos) {
+    const color = (pos % 8 === 0 || pos % 8 === 7) ? 'teal' : 'light-blue'
+    this.leds[pos] = color
   }
   ledState(index) {
     this.refreshLeds()

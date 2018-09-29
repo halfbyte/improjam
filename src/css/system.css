@@ -19,31 +19,37 @@
   box-sizing: border-box;
 }
 .matrix-button--off {
-  background: #ccc
+  background: #ccc;
 }
 .matrix-button--red {
-  background: #800
+  background: #800;
 }
 .matrix-button--green {
-  background: #080
+  background: #080;
 }
 .matrix-button--light-green {
-  background: #0F0
+  background: #0F0;
 }
 .matrix-button--blue {
-  background: #008
+  background: #008;
+}
+.matrix-button--light-blue {
+  background: #88F;
 }
 .matrix-button--yellow {
-  background: #FF0
+  background: #FF0;
 }
 .matrix-button--orange {
-  background: #F80
+  background: #F80;
 }
 .matrix-button--pink {
-  background: #F0F
+  background: #F0F;
 }
 .matrix-button--teal {
-  background: #0ff
+  background: #0ff;
+}
+.matrix-button--dark-teal {
+  background: #088;
 }
 .channel-name {
   display: inline-block;
