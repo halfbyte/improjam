@@ -1,1 +1,1 @@
-console.log("WORKER LOADED")
+console.log('WORKER LOADED')

@@ -2,30 +2,28 @@
 
 // Modules to control application life and create native browser window
 const path = require('path')
-const {app, BrowserWindow, protocol} = require('electron')
+const { app, BrowserWindow, protocol } = require('electron')
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 
-require('electron-reload')(__dirname);
-
+require('electron-reload')(__dirname)
 
 let mainWindow
 
-const base = app.getAppPath();
-const scheme = "app"
+const base = app.getAppPath()
+const scheme = 'app'
 // Create the protocol
 const srcPath = path.join(base, 'src')
-require('./src/create-protocol')(scheme, srcPath);
+require('./src/create-protocol')(scheme, srcPath)
 
 // const protocolServeName = protocolServe({cwd: srcPath, app, protocol});
 
 // The protocol we created needs to be registered
-protocol.registerStandardSchemes([scheme], { secure: true });
-
+protocol.registerStandardSchemes([scheme], { secure: true })
 
 function createWindow () {
   // Create the browser window.
-  mainWindow = new BrowserWindow({width: 1024, height: 768})
+  mainWindow = new BrowserWindow({ width: 1024, height: 768 })
 
   // and load the index.html of the app.
   mainWindow.loadURL('app://./index.html')
