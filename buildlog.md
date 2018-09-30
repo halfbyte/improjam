@@ -17,7 +17,7 @@ In the end this will drive a combination of synths running on Ableton Live and H
 
 ## The beginning (2018-06-28)
 
-This started as a set of small experiments that were a bit aimless. My main concern with this is exact timing and so I started off with figuring out how to divide up the code into stuff that can run in workers and stuff that needs to run on the main thread. 
+This started as a set of small experiments that were a bit aimless. My main concern with this is exact timing and so I started off with figuring out how to divide up the code into stuff that can run in workers and stuff that needs to run on the main thread.
 
 Also, I wanted to see if it is possible to use ES6 modules without the help of any pre compiling, as this is something that I really would like to prevent.
 
@@ -44,3 +44,25 @@ I think the next step could be to prototype the note editor, which involves ente
 One of the key elements of the note editor is the possibility to enter notes in various scales effectively. Like I said last time, I'll model this losely after the Circuit editor, because I like how it works. Today I've started to work on the piece of code that will translate from a position on the matrix to the actual note value and vice versa. I call this piece the scaler. The UI portion is kept in the MatrixView class. It was relatively straight forward with the exception of the overlapping notes that are also featured on the Circuit. The base note of the scale is present on both edges of the matrix, so that if you select the base note on the upper row, the last LED in the top row has to light up as well. The code for this is terrible and made me question my approach, but it works for now...
 
 I should probably start on the Push integration soon...
+
+## BIG Sprint I (2018-09-29 - 2018-09-39)
+
+I found myself with a mostly free weekend and took the chance to push this forward in a big way. I did the Push 2 integration, including driving the display using [the library](https://github.com/halfbyte/ableton-push-canvas-display#readme) I built earlier. I wrote most of the stuff down on a long list and checked it off, so let's see:
+
+- Built a simple, single file persistence (Needs improvement)
+- Switch Channels via Push (using the button row above the display)
+- Show channel numbers and active channel on the display
+- Added a simple drum sequencer (needs work to be volca and circuit compatible)
+- Built a simple pattern chaining mechanism (no random chains, just ranges as Ableton's push integration)
+- The current playhead position is shown on Push if the current pattern is played
+- Play / Pause via Push (yeah)
+- Delete Patterns and Notes and Steps via Push
+- Edit Note Velocity and Length via encoders on Push (Hold step pad)
+- Set Tempo via Tempo Knob on Push (also: Display Tempo on Screen)
+- Note Preview (Play notes when hitting the note pads)
+- Implement the Push Accent button (simply fixes velocity to 100 atm)
+- Enabled editing the scaler config (scale and root note) via Push encoders
+- Changed the way steps are selected (now only if you hold the pad)
+- Mute and Solo tracks
+- Realtime Recording (this seems to work ok for now, might be a bit imprecise)
+
