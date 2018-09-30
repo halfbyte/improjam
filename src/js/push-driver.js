@@ -32,10 +32,10 @@ const COLOR_VALUES = [
   [127, 64, 0, 0],
   [0, 80, 80, 0],
   [127, 0, 127, 0],
-  [64, 64, 64, 0],
-  [128, 128, 128, 0],
-  [192, 192, 192, 0],
-  [255, 255, 255, 0],
+  [32, 32, 32, 32],
+  [128, 128, 128, 128],
+  [192, 192, 192, 192],
+  [255, 255, 255, 255],
   [0, 0, 0, 0],
   [0, 0, 0, 0],
   [0, 0, 0, 0],
@@ -58,6 +58,7 @@ export default class PushDriver extends Eventable {
     this.onMidiInput = this.onMidiInput.bind(this)
     this.findMidiPorts(midiAccess)
     this.setupMatrix()
+    this.setupFunctionLeds()
     this.setPalette()
     this.resetMidiMatrix()
     this.resetFunctionButtons()
@@ -126,11 +127,49 @@ export default class PushDriver extends Eventable {
         this.trigger('push:channel:on', cc - 102)
       } else if (cc === 85 && val > 0) {
         this.trigger('push:play')
+      } else if (cc === 86 && val > 0) {
+        this.trigger('push:function:on', 'record')
       } else if (cc === 48 && val > 0) {
         this.trigger('push:function:on', 'select')
       } else if (cc === 48 && val === 0) {
         this.trigger('push:function:off', 'select')
+      } else if (cc === 118 && val > 0) {
+        this.trigger('push:function:on', 'delete')
+      } else if (cc === 118 && val === 0) {
+        this.trigger('push:function:off', 'delete')
+      } else if (cc === 57 && val > 0) {
+        this.trigger('push:function:on', 'accent')
+      } else if (cc === 57 && val === 0) {
+        this.trigger('push:function:off', 'accent')
+      } else if (cc === 58 && val > 0) {
+        this.trigger('push:function:on', 'scale')
+      } else if (cc === 58 && val === 0) {
+        this.trigger('push:function:off', 'scale')
+      } else if (cc === 14) {
+        const signed = val < 64 ? val : val - 128
+        this.trigger('push:tempo', signed)
+      } else if (cc >= 71 && cc <= 78) {
+        const signed = val < 64 ? val : val - 128
+        this.trigger('push:encoder', cc - 71, signed)
+      } else if (cc === 59 && val > 0) {
+        this.trigger('push:function:on', 'save')
+      } else if (cc === 60 && val > 0) {
+        this.trigger('push:function:on', 'mute')
+      } else if (cc === 60 && val === 0) {
+        this.trigger('push:function:off', 'mute')
+      } else if (cc === 61 && val > 0) {
+        this.trigger('push:function:on', 'solo')
+      } else if (cc === 61 && val === 0) {
+        this.trigger('push:function:off', 'solo')
+      } else if (cc >= 20 && cc <= 27 && val > 0) {
+        this.trigger('push:mute-solo', cc - 20)
       }
+    }
+  }
+  setupFunctionLeds () {
+    this.currentFunctionLeds = []
+    for (var i = 0; i < 128; i++) {
+      this.currentFunctionLeds.push([0, 0])
     }
   }
   setupMatrix () {
@@ -138,6 +177,10 @@ export default class PushDriver extends Eventable {
     for (var i = 0; i < 64; i++) {
       this.currentMatrix.push([0, 0])
     }
+  }
+  sendSingleFunctionEntry (index, entry) {
+    if (!this.installed) { return }
+    this.output.send([0xb0 + (entry[0] & 0xF), index, entry[1]])
   }
   sendSingleMatrixEntry (index, entry) {
     if (!this.installed) { return }
@@ -157,6 +200,17 @@ export default class PushDriver extends Eventable {
       })
     }
   }
+  setFunctionLeds (data) {
+    const newState = Array.from(this.currentFunctionLeds)
+    data.forEach((entry) => {
+      const [index, config] = entry
+      newState[index] = config
+    })
+    if (!this.debug) {
+      this.sendLedsDiff(this.diffLeds(this.currentFunctionLeds, newState))
+    }
+    this.currentFunctionLeds = newState
+  }
   setMatrix (data) {
     const newMatrix = []
     data.forEach((entry, index) => {
@@ -172,17 +226,41 @@ export default class PushDriver extends Eventable {
     this.currentMatrix = newMatrix
   }
   setChannel (c) {
+    const leds = []
     for (var i = 0; i < 8; i++) {
-      this.output.send([0xb0, 102 + i, c === i ? COLORS.white : 0])
+      leds.push([102 + i, [0, c === i ? COLORS.white : 0]])
     }
+    this.setFunctionLeds(leds)
   }
   setPlaying (playing) {
-    this.output.send([0xb0, 85, playing ? COLORS.green : COLORS.red])
+    this.setFunctionLeds([[85, [0, playing ? COLORS.green : COLORS['dark-grey']]]])
+  }
+  setRecording (recording) {
+    this.setFunctionLeds([[86, [0, recording ? COLORS.red : COLORS['dark-grey']]]])
+  }
+  setAccent (on) {
+    this.setFunctionLeds([[57, [0, on ? COLORS.white : COLORS['dark-grey']]]])
   }
   sendDiff (diff) {
+    if (diff.length === 0) { return }
     diff.forEach((entry) => {
       this.sendSingleMatrixEntry(entry[0], entry[1])
     })
+  }
+  sendLedsDiff (diff) {
+    if (diff.length === 0) { return }
+    diff.forEach((entry) => {
+      this.sendSingleFunctionEntry(entry[0], entry[1])
+    })
+  }
+  diffLeds (old, newM) {
+    const diff = []
+    for (var i = 0; i < 128; i++) {
+      if (old[i][0] !== newM[i][0] || old[i][1] !== newM[i][1]) {
+        diff.push([i, newM[i]])
+      }
+    }
+    return diff
   }
   diffMatrix (old, newM) {
     const diff = []
@@ -194,11 +272,14 @@ export default class PushDriver extends Eventable {
     return diff
   }
   resetFunctionButtons () {
-    if (!this.installed) { return }
-    const WHITE_BUTTONS = [55, 54, 48]
+    const leds = []
+    const WHITE_BUTTONS = [55, 54, 48, 118, 59, 58]
     WHITE_BUTTONS.forEach((cc) => {
-      this.output.send([0xb0, cc, 127])
+      leds.push([cc, [0, COLORS.white]])
     })
+    leds.push([60, [0, COLORS.red]])
+    leds.push([61, [0, COLORS.yellow]])
+    this.setFunctionLeds(leds)
   }
   setPalette () {
     COLOR_VALUES.forEach((values, index) => {
@@ -211,5 +292,28 @@ export default class PushDriver extends Eventable {
       ])
     })
     this.output.send([0xF0, 0x00, 0x21, 0x1D, 0x01, 0x01, 0x05, 0xF7])
+  }
+  refreshMutes (channels) {
+    const leds = []
+    channels.forEach((ch, index) => {
+      const color = ch.muted ? COLORS.red : COLORS['dark-grey']
+      leds.push([20 + index, [0, color]])
+    })
+    this.setFunctionLeds(leds)
+  }
+  refreshSolo (soloChannel) {
+    const leds = []
+    for (var i = 0; i < 8; i++) {
+      const color = (i === soloChannel) ? COLORS.yellow : COLORS['dark-grey']
+      leds.push([20 + i, [0, color]])
+    }
+    this.setFunctionLeds(leds)
+  }
+  noMutes () {
+    const leds = []
+    for (var i = 0; i < 8; i++) {
+      leds.push([20 + i, [0, 0]])
+    }
+    this.setFunctionLeds(leds)
   }
 }

@@ -23,6 +23,11 @@ const DRUM_MODES = {
   'drums-volca': []
 }
 
+const PARAM_LIMITS = {
+  length: [1, 64],
+  velocity: [1, 127]
+}
+
 function enumerate (devices) {
   const hash = {}
   devices.forEach((device) => {
@@ -73,6 +78,7 @@ class Channel {
     this.inputChannel = config.inputChannel || DEFAULT_CHANNEL_CONFIG.inputChannel
     this.outputChannel = config.outputChannel || DEFAULT_CHANNEL_CONFIG.outputChannel
     this.sequencerMode = config.sequencerMode || DEFAULT_CHANNEL_CONFIG.sequencerMode
+    this.muted = !!config.muted
     this.attachListeners()
     m.redraw()
   }
@@ -82,7 +88,8 @@ class Channel {
       inputDevice: this.inputDevice,
       inputChannel: this.inputChannel,
       outputChannel: this.outputChannel,
-      sequencerMode: this.sequencerMode
+      sequencerMode: this.sequencerMode,
+      muted: this.muted
     }
   }
 }
@@ -108,6 +115,10 @@ class Sequencer {
     this.scheduleNextNotes = this.scheduleNextNotes.bind(this)
     this.tickWorker = new Worker('js/tick-worker.js')
     this.tickWorker.onmessage = this.scheduleNextNotes
+    this.realTick = 0
+    this.realStep = 0
+    this.oldRealStep = 0
+    this.openNotes = []
   }
   start () {
     this.playing = true
@@ -133,6 +144,16 @@ class Sequencer {
     const currentTime = performance.now()
 
     const perTick = 60 / (this.tempo * 24 * 4) * 1000
+
+    const diff = (this.nextTime - currentTime) / perTick
+    var realTick = Math.floor(this.tick - diff)
+    if (realTick < 0) { realTick = 256 * 24 + realTick }
+    this.realTick = realTick
+    this.realStep = Math.floor(realTick / 24)
+    if (this.realStep !== this.oldRealStep) {
+      m.redraw()
+      this.oldRealStep = this.realStep
+    }
 
     if (currentTime > this.nextTime - (perTick * 4)) {
       for (i = 0; i < 48; i++) {
@@ -171,6 +192,7 @@ class Sequencer {
     )
   }
   toggleNote (track, time, note, velocity = 100, length = 24) {
+    if (this.recording) { return }
     if (this.tracks[track].data[time]) {
       const existing = this.tracks[track].data[time].find((n) => {
         return n.type === 'note' && n.note === note
@@ -183,16 +205,148 @@ class Sequencer {
         this.tracks[track].data[time].push({
           type: 'note', note: note, velocity: velocity, length: length
         })
+        return true
       }
+    } else {
+      this.tracks[track].data[time] = [
+        { type: 'note', note: note, velocity: velocity, length: length }
+      ]
+      return true
+    }
+  }
+  // for realtime recording
+  addNote (track, time, note, velocity = 100, length = 24) {
+    console.log('AN', track, time, note, velocity, length)
+    if (this.tracks[track].data[time]) {
+      const existing = this.tracks[track].data[time].find((n) => {
+        return n.type === 'note' && n.note === note
+      })
+      if (existing) {
+        this.tracks[track].data[time] = this.tracks[track].data[time].filter((ev) => {
+          return !(ev.type === 'note' && ev.note === note)
+        })
+      }
+      this.tracks[track].data[time].push({
+        type: 'note', note: note, velocity: velocity, length: length
+      })
     } else {
       this.tracks[track].data[time] = [
         { type: 'note', note: note, velocity: velocity, length: length }
       ]
     }
   }
+  previewNoteHit (track, note, velocity) {
+    this.sendNote(track, performance.now(), note, velocity, 1)
+  }
+  previewNote (track, note, velocity) {
+    this.system.sendChannelMessage(
+      track,
+      [144, note, velocity]
+    )
+  }
+  previewNoteOff (track, note) {
+    this.system.sendChannelMessage(
+      track,
+      [128, note, 0]
+    )
+  }
+  recordNoteOn (track, note, velocity) {
+    console.log('RNOn', track, note, velocity)
+    if (!this.recording || !this.playing) { return }
+    this.openNotes.push([this.realTick, track, note, velocity])
+  }
+  recordNoteOff (track, note) {
+    if (!this.recording || !this.playing) { return }
+    const openNote = this.openNotes.find((n) => {
+      return n[1] === track && n[2] === note
+    })
+    if (openNote) {
+      this.openNotes = this.openNotes.filter((n) => {
+        console.log('ff', n[1], track, n[2], note)
+        return n[1] !== track || n[2] !== note
+      })
+
+      const offTime = this.realTick
+      const onRounded = Math.round(openNote[0] / 24)
+      var offRounded = Math.round(offTime / 24)
+      if (offRounded < onRounded) {
+        offRounded += 256
+      }
+      const length = Math.max(1, offRounded - onRounded) * 24
+      console.log('RNOFF', onRounded, offRounded, length, this.openNotes.length)
+      const stepInPattern = onRounded % (this.tracks[track].length * 16)
+      const time = (this.tracks[track].firstPattern * 16 + stepInPattern) * 24
+      this.addNote(track, time, openNote[2], openNote[3], length)
+    }
+  }
   setPatternChain (channel, min, max) {
     this.tracks[channel].firstPattern = min
     this.tracks[channel].length = max - min + 1
+  }
+  deletePattern (channel, pattern) {
+    const start = pattern * 16 * 24
+    var i
+    for (i = 0; i < (16 * 24); i++) {
+      this.tracks[channel].data[i + start] = null
+    }
+  }
+  deleteStep (channel, pattern, step) {
+    console.log('DELETE', channel, pattern, step)
+    const slot = (pattern * 16 + step) * 24
+    this.tracks[channel].data[slot] = null
+  }
+  // this deletes all occurences of a specific note from the whole pattern
+  deleteNote (channel, pattern, note) {
+    const start = pattern * 16 * 24
+    var i
+    for (i = 0; i < (16 * 24); i++) {
+      if (this.tracks[channel].data[i + start]) {
+        const notes = this.tracks[channel].data[i + start].filter((n) => n.note !== note)
+        this.tracks[channel].data[i + start] = notes
+      }
+    }
+  }
+  editParam (channel, pattern, note, param, increment) {
+    const time = (pattern * 16 + note) * 24
+    const notes = this.tracks[channel].data[time]
+    if (notes && notes.length > 0) {
+      const originalParam = notes[0][param]
+      var newParam = originalParam + increment
+      if (newParam < PARAM_LIMITS[param][0]) { newParam = PARAM_LIMITS[param][0] }
+      if (newParam > PARAM_LIMITS[param][1]) { newParam = PARAM_LIMITS[param][1] }
+      const newNotes = notes.map((note) => {
+        note[param] = newParam
+        return note
+      })
+      this.tracks[channel].data[time] = newNotes
+    }
+  }
+  editLength (channel, pattern, note, increment) {
+    const time = (pattern * 16 + note) * 24
+    const notes = this.tracks[channel].data[time]
+    if (notes && notes.length > 0) {
+      const originalLen = notes[0].length / 24
+      var newLen = originalLen + increment
+      if (newLen < 1) { newLen = 1 }
+      if (newLen > 64) { newLen = 64 }
+      const newNotes = notes.map((note) => {
+        note.length = newLen * 24
+        return note
+      })
+      this.tracks[channel].data[time] = newNotes
+    }
+  }
+  changeTempo (inc) {
+    console.log('CHTMP', inc)
+    var newTempo = this.tempo + inc
+    if (newTempo > 200) {
+      newTempo = 200
+    }
+    if (newTempo < 30) {
+      newTempo = 30
+    }
+    this.tempo = newTempo
+    m.redraw()
   }
 }
 
@@ -223,7 +377,7 @@ class Scaler {
     const baseNote = note - octaveNote - rootNote
 
     const row = 1 - Math.floor(baseNote / 12)
-    const noteInOct = note % 12
+    const noteInOct = (note - rootNote) % 12
     return [row, map.indexOf(noteInOct)]
   }
   octaveUp () {
@@ -246,6 +400,28 @@ class Scaler {
     this.currentRootNote = config.currentRootNote || 'C'
     this.currentOctave = config.currentOctave || 3
   }
+  editRootNote (inc) {
+    const currentIndex = NOTES.indexOf(this.currentRootNote)
+    var newIndex = currentIndex + inc
+    if (newIndex > (NOTES.length - 1)) {
+      newIndex = NOTES.length - 1
+    }
+    if (newIndex < 0) {
+      newIndex = 0
+    }
+    this.currentRootNote = NOTES[newIndex]
+  }
+  editScale (inc) {
+    const currentIndex = SCALES.indexOf(this.currentScale)
+    var newIndex = currentIndex + inc
+    if (newIndex > (SCALES.length - 1)) {
+      newIndex = SCALES.length - 1
+    }
+    if (newIndex < 0) {
+      newIndex = 0
+    }
+    this.currentScale = SCALES[newIndex]
+  }
 }
 
 class MIDISystem extends Eventable {
@@ -261,6 +437,7 @@ class MIDISystem extends Eventable {
     this.SCALES = SCALES
     this.sequencer = new Sequencer(this, this.channels.length)
     this.matrixView = new MatrixView(this, this.sequencer)
+    this.soloChannel = null
 
     this.sequencer.tracks[0].data[0] = [{
       type: 'note',
@@ -314,7 +491,6 @@ class MIDISystem extends Eventable {
   }
   initPushState () {
     this.pushDriver.setChannel(this.matrixView.selectedChannel)
-    this.pushDriver.setPlaying(this.sequencer.playing)
   }
   setupChannels () {
     let i
@@ -341,6 +517,8 @@ class MIDISystem extends Eventable {
     // console.log(channel, data, deviceName)
   }
   sendChannelMessage (track, data, time) {
+    if (this.channels[track].muted) { return }
+    if (this.soloChannel != null && this.soloChannel !== track) { return }
     data[0] = data[0] | this.channels[track].outputChannel
     if (this.outputs[this.channels[track].outputDevice]) {
       this.outputs[this.channels[track].outputDevice].send(data, time)
@@ -357,6 +535,8 @@ class MIDISystem extends Eventable {
           this.scaler.octaveDown()
           m.redraw()
         }
+      } else if (fun === 'save') {
+        this.save()
       }
     })
     this.pushDriver.on('push:channel:on', (channel) => {
@@ -367,7 +547,6 @@ class MIDISystem extends Eventable {
     this.pushDriver.on('push:play', (channel) => {
       this.sequencer.playPause()
       m.redraw()
-      this.pushDriver.setPlaying(this.sequencer.playing)
     })
   }
   // TODO: Implement a real save.
@@ -384,7 +563,8 @@ class MIDISystem extends Eventable {
       channels: this.channels.map((ch) => ch.getConfig()),
       scaler: this.scaler.getConfig(),
       settings: {
-        tempo: this.sequencer.tempo
+        tempo: this.sequencer.tempo,
+        accent: this.matrixView.accent
       }
     }
     // write config
@@ -422,6 +602,7 @@ class MIDISystem extends Eventable {
         }
         if (parsed.settings) {
           this.sequencer.tempo = parsed.settings.tempo || 120
+          this.matrixView.accent = !!parsed.settings.accent
         }
       }
     })
@@ -433,6 +614,7 @@ const COLOR_NAMES = {
   selectedPattern: 'light-red',
   step: 'green',
   selectedStep: 'light-green',
+  activeStep: 'white',
   note: 'blue',
   rootNote: 'cyan',
   selectedNote: 'light-blue',
@@ -458,40 +640,124 @@ class MatrixView {
     for (var i = 0; i < 64; i++) { this.leds.push('off') }
     this.selectedChannel = 0
     this.selectedPattern = 0
-    this.selectedNote = 0
+    this.selectedNote = null
+    this.editNote = null
     this.noteOffset = 48
     this.selectedDrum = 0
     this.selectedPatterns = new Set()
     this.selectMode = false
+    this.deleteMode = false
+    this.muteMode = false
+    this.accent = false
     this.system.pushDriver.on('push:matrix:on', (led, velocity) => {
       this.ledClick(led, velocity)
       if (led < 16) {
         if (this.selectMode) {
           this.selectedPattern = led
+        } else if (this.deleteMode) {
+          this.sequencer.deletePattern(this.selectedChannel, led)
         } else {
           this.selectedPatterns.add(led)
           const max = maxInSet(this.selectedPatterns)
           const min = minInSet(this.selectedPatterns)
           this.sequencer.setPatternChain(this.selectedChannel, min, max)
-          this.selectedPattern = min  
+          this.selectedPattern = min
         }
         m.redraw()
       }
+      if (led >= 16 && led < 48) {
+        if (this.editNote === null) {
+          this.editNote = led - 16
+        }
+      }
     })
     this.system.pushDriver.on('push:matrix:off', (led, velocity) => {
+      this.ledOff(led)
       if (led < 16) {
         this.selectedPatterns.delete(led)
+      }
+      if (led >= 16 && led < 48) {
+        if (this.editNote === led - 16) {
+          this.editNote = null
+        }
       }
     })
     this.system.pushDriver.on('push:function:on', (fun) => {
       if (fun === 'select') {
         this.selectMode = true
       }
+      if (fun === 'delete') {
+        this.deleteMode = true
+      }
+      if (fun === 'accent') {
+        this.accent = !this.accent
+        m.redraw()
+      }
+      if (fun === 'scale') {
+        this.scaleMode = true
+      }
+      if (fun === 'mute') {
+        this.muteMode = true
+        m.redraw()
+      }
+      if (fun === 'solo') {
+        this.soloMode = true
+        m.redraw()
+      }
+      if (fun === 'record') {
+        this.system.sequencer.recording = !this.system.sequencer.recording
+        m.redraw()
+      }
     })
     this.system.pushDriver.on('push:function:off', (fun) => {
       if (fun === 'select') {
         this.selectMode = false
       }
+      if (fun === 'delete') {
+        this.deleteMode = false
+      }
+      if (fun === 'scale') {
+        this.scaleMode = false
+      }
+      if (fun === 'mute') {
+        this.muteMode = false
+        m.redraw()
+      }
+      if (fun === 'solo') {
+        this.soloMode = false
+        m.redraw()
+      }
+    })
+    this.system.pushDriver.on('push:encoder', (encoder, increment) => {
+      if (this.editNote != null) {
+        if (encoder === 0) {
+          this.sequencer.editLength(this.selectedChannel, this.selectedPattern, this.editNote, increment)
+        } else if (encoder === 1) {
+          this.sequencer.editParam(this.selectedChannel, this.selectedPattern, this.editNote, 'velocity', increment)
+        }
+      } else if (this.scaleMode) {
+        if (encoder === 0) {
+          this.system.scaler.editRootNote(increment)
+        } else if (encoder === 1) {
+          this.system.scaler.editScale(increment)
+        }
+      }
+    })
+    this.system.pushDriver.on('push:tempo', (increment) => {
+      this.sequencer.changeTempo(increment)
+    })
+    this.system.pushDriver.on('push:mute-solo', (channel) => {
+      if (this.muteMode) {
+        this.system.channels[channel].muted = !this.system.channels[channel].muted
+      } else if (this.soloMode) {
+        if (this.system.soloChannel === channel) {
+          this.system.soloChannel = null
+        } else {
+          this.system.soloChannel = channel
+        }
+      }
+
+      m.redraw()
     })
   }
   refreshLeds () {
@@ -512,6 +778,17 @@ class MatrixView {
     } else {
       this.refreshForDrumsSequencer(this.system.channels[this.selectedChannel].sequencerMode)
     }
+    this.system.pushDriver.setAccent(this.accent)
+    this.system.pushDriver.setPlaying(this.sequencer.playing)
+    this.system.pushDriver.setRecording(this.sequencer.recording)
+
+    if (this.muteMode) {
+      this.system.pushDriver.refreshMutes(this.system.channels)
+    } else if (this.soloMode) {
+      this.system.pushDriver.refreshSolo(this.system.soloChannel)
+    } else {
+      this.system.pushDriver.noMutes()
+    }
   }
   refreshForNotesSequencer () {
     var i
@@ -521,8 +798,16 @@ class MatrixView {
       if (track.data[24 * (i + (this.selectedPattern * 16))] && track.data[24 * (i + (this.selectedPattern * 16))].length > 0) {
         this.leds[16 + i] = COLOR_NAMES.step
       }
+      const stepInPattern = this.sequencer.realStep % (this.sequencer.tracks[this.selectedChannel].length * 16)
+      const firstPattern = this.sequencer.tracks[this.selectedChannel].firstPattern
+      if (this.sequencer.playing && (i + ((this.selectedPattern - firstPattern) * 16)) === stepInPattern) {
+        this.leds[16 + i] = COLOR_NAMES.activeStep
+      }
     }
-    this.leds[16 + this.selectedNote] = COLOR_NAMES.selectedStep
+    if (this.selectedNote != null) {
+      this.leds[16 + this.selectedNote] = COLOR_NAMES.selectedStep
+    }
+
     // notes
     for (i = 0; i < 16; i++) {
       if (i % 8 === 0 || i % 8 === 7) {
@@ -531,8 +816,7 @@ class MatrixView {
         this.leds[48 + i] = COLOR_NAMES.note
       }
     }
-
-    if (track.data[24 * (this.selectedNote + (this.selectedPattern * 16))]) {
+    if (this.selectedNote != null && track.data[24 * (this.selectedNote + (this.selectedPattern * 16))]) {
       const notes = track.data[24 * (this.selectedNote + (this.selectedPattern * 16))]
       notes.forEach((note) => {
         const [row, pos] = this.system.scaler.rowAndPos(note.note)
@@ -565,6 +849,11 @@ class MatrixView {
           }
         })
       }
+      const stepInPattern = this.sequencer.realStep % (this.sequencer.tracks[this.selectedChannel].length * 16)
+      const firstPattern = this.sequencer.tracks[this.selectedChannel].firstPattern
+      if (this.sequencer.playing && (i + ((this.selectedPattern - firstPattern) * 16)) === stepInPattern) {
+        this.leds[16 + i] = COLOR_NAMES.activeStep
+      }
     }
     if (mode === 'drums') {
       for (i = 0; i < 16; i++) {
@@ -582,31 +871,72 @@ class MatrixView {
     this.system.pushDriver.setMatrix(this.leds)
     return this.leds[index]
   }
+
   ledClick (index, velocity = 100) {
-    
+    if (this.accent) { velocity = 100 }
     if (this.system.channels[this.selectedChannel].sequencerMode === 'notes') {
       if (index >= 16 && index < 48) {
+        if (this.deleteMode) {
+          this.sequencer.deleteStep(this.selectedChannel, this.selectedPattern, index - 16)
+        }
         this.selectedNote = index - 16
       }
       if (index >= 48) {
-        const time = 24 * (this.selectedNote + (this.selectedPattern * 16))
         const row = 1 - Math.floor((index - 48) / 8)
         const pos = index % 8
         const note = this.system.scaler.note(row, pos)
-        this.sequencer.toggleNote(this.selectedChannel, time, note, velocity)
+        if (!this.deleteMode) {
+          this.sequencer.recordNoteOn(this.selectedChannel, note, velocity)
+        }
+        if (this.deleteMode) {
+          this.sequencer.deleteNote(this.selectedChannel, this.selectedPattern, note)
+        } else if (this.selectedNote != null) {
+          const time = 24 * (this.selectedNote + (this.selectedPattern * 16))
+          if (this.sequencer.toggleNote(this.selectedChannel, time, note, velocity)) {
+            this.sequencer.previewNote(this.selectedChannel, note, velocity)
+          }
+        } else {
+          this.sequencer.previewNote(this.selectedChannel, note, velocity)
+        }
       }
     } else {
       if (index >= 16 && index < 48) {
         const time = 24 * (index - 16 + (this.selectedPattern * 16))
         const note = this.noteForSelectedDrum()
         if (note != null) {
-          this.sequencer.toggleNote(this.selectedChannel, time, note, velocity)
+          if (this.deleteMode) {
+            this.sequencer.deleteStep(this.selectedChannel, this.selectedPattern, index - 16)
+          } else {
+            this.sequencer.toggleNote(this.selectedChannel, time, note, velocity)
+          }
         }
       }
       if (index >= 48) {
         var slot = index - 48
         this.selectedDrum = slot
+        if (this.deleteMode) {
+          this.sequencer.deleteNote(this.selectedChannel, this.selectedPattern, this.noteForSelectedDrum())
+        } else if (!this.selectMode) {
+          this.sequencer.previewNoteHit(this.selectedChannel, this.noteForSelectedDrum(), velocity)
+          this.sequencer.recordNoteOn(this.selectedChannel, this.noteForSelectedDrum(), velocity)
+          this.sequencer.recordNoteOff(this.selectedChannel, this.noteForSelectedDrum())
+        }
       }
+    }
+    m.redraw()
+  }
+  ledOff (index) {
+    if (index >= 16 && index < 48 && this.system.channels[this.selectedChannel].sequencerMode === 'notes') {
+      if (this.selectedNote === index - 16) {
+        this.selectedNote = null
+      }
+    }
+    if (index >= 48) {
+      const row = 1 - Math.floor((index - 48) / 8)
+      const pos = index % 8
+      const note = this.system.scaler.note(row, pos)
+      this.sequencer.previewNoteOff(this.selectedChannel, note)
+      this.sequencer.recordNoteOff(this.selectedChannel, note)
     }
     m.redraw()
   }
