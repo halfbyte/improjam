@@ -108,7 +108,13 @@ export default class PushDriver extends Eventable {
         this.trigger('push:matrix:on', pos, velocity)
       }
     } else if (command === 128) {
-      // send noteoff
+      const note = event.data[1]
+      if (note >= 36 && note <= 99) {
+        const x = (note - 36) % 8
+        const y = 7 - Math.floor((note - 36) / 8)
+        const pos = (y * 8) + x
+        this.trigger('push:matrix:off', pos)
+      }
     } else if (command === 0xb0) {
       const cc = event.data[1]
       const val = event.data[2]
@@ -120,6 +126,10 @@ export default class PushDriver extends Eventable {
         this.trigger('push:channel:on', cc - 102)
       } else if (cc === 85 && val > 0) {
         this.trigger('push:play')
+      } else if (cc === 48 && val > 0) {
+        this.trigger('push:function:on', 'select')
+      } else if (cc === 48 && val === 0) {
+        this.trigger('push:function:off', 'select')
       }
     }
   }
@@ -185,7 +195,7 @@ export default class PushDriver extends Eventable {
   }
   resetFunctionButtons () {
     if (!this.installed) { return }
-    const WHITE_BUTTONS = [55, 54]
+    const WHITE_BUTTONS = [55, 54, 48]
     WHITE_BUTTONS.forEach((cc) => {
       this.output.send([0xb0, cc, 127])
     })

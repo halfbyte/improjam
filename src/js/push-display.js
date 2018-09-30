@@ -23,10 +23,15 @@ export default class PushDisplay {
   }
   updateDisplay () {
     const ctx = this.ctx
+    // clear in a way that makes transparency work
     ctx.fillStyle = 'rgba(0,0,0,1)'
     ctx.fillRect(0, 0, 960, 160)
+    ctx.font = "bold 200px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+    ctx.textAlign = 'center'
+    ctx.fillStyle = 'rgba(255,255,255,0.1)'
+    ctx.fillText('improjam', 480, 144)
+
     ctx.font = "16px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
-    ctx.fillStyle = '#f00'
     ctx.fillStyle = '#ccc'
     ctx.textAlign = 'center'
     for (var i = 0; i < 8; i++) {
@@ -45,8 +50,8 @@ export default class PushDisplay {
     this.updateDisplay()
     sendFrame(this.ctx, (error) => {
       if (error) { console.error('sendFrame Error', error) }
+      this.frame++
+      requestAnimationFrame(this.displayLoop)
     })
-    this.frame++
-    requestAnimationFrame(this.displayLoop)
   }
 }

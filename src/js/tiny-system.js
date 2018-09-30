@@ -190,6 +190,10 @@ class Sequencer {
       ]
     }
   }
+  setPatternChain (channel, min, max) {
+    this.tracks[channel].firstPattern = min
+    this.tracks[channel].length = max - min + 1
+  }
 }
 
 class Scaler {
@@ -304,7 +308,6 @@ class MIDISystem extends Eventable {
       length: 24, // four quarter notes
       velocity: 100
     }]
-    this.sequencer.start()
     this.setupPushBindings()
     this.load()
     this.initPushState()
@@ -436,6 +439,17 @@ const COLOR_NAMES = {
   selectedRootNote: 'light-cyan'
 }
 
+function maxInSet (set) {
+  var max = 0
+  set.forEach((entry) => { max = (entry > max) ? entry : max })
+  return max
+}
+function minInSet (set) {
+  var min = maxInSet(set)
+  set.forEach((entry) => { min = (entry < min) ? entry : min })
+  return min
+}
+
 class MatrixView {
   constructor (system, sequencer) {
     this.system = system
@@ -447,8 +461,37 @@ class MatrixView {
     this.selectedNote = 0
     this.noteOffset = 48
     this.selectedDrum = 0
-    this.system.pushDriver.on('push:matrix:on', (led) => {
-      this.ledClick(led)
+    this.selectedPatterns = new Set()
+    this.selectMode = false
+    this.system.pushDriver.on('push:matrix:on', (led, velocity) => {
+      this.ledClick(led, velocity)
+      if (led < 16) {
+        if (this.selectMode) {
+          this.selectedPattern = led
+        } else {
+          this.selectedPatterns.add(led)
+          const max = maxInSet(this.selectedPatterns)
+          const min = minInSet(this.selectedPatterns)
+          this.sequencer.setPatternChain(this.selectedChannel, min, max)
+          this.selectedPattern = min  
+        }
+        m.redraw()
+      }
+    })
+    this.system.pushDriver.on('push:matrix:off', (led, velocity) => {
+      if (led < 16) {
+        this.selectedPatterns.delete(led)
+      }
+    })
+    this.system.pushDriver.on('push:function:on', (fun) => {
+      if (fun === 'select') {
+        this.selectMode = true
+      }
+    })
+    this.system.pushDriver.on('push:function:off', (fun) => {
+      if (fun === 'select') {
+        this.selectMode = false
+      }
     })
   }
   refreshLeds () {
@@ -540,9 +583,7 @@ class MatrixView {
     return this.leds[index]
   }
   ledClick (index, velocity = 100) {
-    if (index < 16) {
-      this.selectedPattern = index
-    }
+    
     if (this.system.channels[this.selectedChannel].sequencerMode === 'notes') {
       if (index >= 16 && index < 48) {
         this.selectedNote = index - 16
