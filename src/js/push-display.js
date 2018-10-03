@@ -3,20 +3,24 @@ const { initPush, sendFrame } = require('ableton-push-canvas-display')
 
 export default class PushDisplay {
   constructor (system) {
+    console.log("WH")
     this.system = system
     this.canvas = document.getElementById('push-display-canvas')
     this.ctx = this.canvas.getContext('2d')
+    this.installed = false
     initPush((err) => {
       if (err) {
-        console.error('Error while initializing push', err)
+        this.installed = false
+      } else {
+        this.installed = true
       }
     })
+    this.tickWorker = new Worker('js/tick-worker.js')
     this.initDisplay()
     this.displayLoop = this.displayLoop.bind(this)
     this.displayLoop()
-    this.frame = 0
-    this.tickWorker = new Worker('js/tick-worker.js')
     this.tickWorker.onmessage = this.displayLoop
+    this.frame = 0
   }
   initDisplay () {
     this.ctx.clearRect(0, 0, 960, 160)
@@ -38,12 +42,13 @@ export default class PushDisplay {
     ctx.fillStyle = '#fff'
     if (this.system.sequencer) {
       ctx.fillText(`Step: ${this.system.sequencer.realStep}`, 10, 150)
+      ctx.fillText(`Tempo: ${this.system.sequencer.tempo}`, 250, 150)
+      ctx.fillText(`Swing: ${this.system.sequencer.swing}`, 370, 150)
     }
     if (this.system.scaler) {
       ctx.textAlign = 'start'
       ctx.fillStyle = '#fff'
       ctx.fillText(`Octave: ${this.system.scaler.currentOctave}`, 130, 150)
-      ctx.fillText(`Tempo: ${this.system.sequencer.tempo}`, 250, 150)
     }
     if (this.system.matrixView && this.system.matrixView.editNote != null) {
       const time = (this.system.matrixView.selectedPattern * 16 + this.system.matrixView.editNote) * 24
@@ -62,11 +67,25 @@ export default class PushDisplay {
       ctx.fillText(`${this.system.scaler.currentRootNote}`, 60, 70)
       ctx.fillText('Scale', 180, 50)
       ctx.fillText(`${this.system.scaler.currentScale}`, 180, 70)
+    } else if (this.system.matrixView && this.system.matrixView.controllerMode) {
+      for(var slot=0;slot<8;slot++) {
+        const slotValue = this.system.channels[this.system.matrixView.selectedChannel].controlSlots[slot]
+        const width = slotValue / 127.0 * 110
+        ctx.fillStyle = '#ccc'
+        ctx.fillRect(5 + (120 * slot), 30, width, 20)
+        ctx.textAlign = 'center'
+        ctx.fillStyle = "#fff"
+        ctx.fillText(`${slotValue}`, 120 * slot + 60, 47)
+      }
     }
+
     if (this.system.matrixView && this.system.matrixView.selectedNote != null) {
       ctx.textAlign = 'left'
       ctx.fillText(`Step: ${this.system.matrixView.selectedNote}`, 370, 150)
     }
+
+
+
     ctx.fillStyle = '#ccc'
     ctx.textAlign = 'center'
     for (var i = 0; i < 8; i++) {
@@ -85,6 +104,10 @@ export default class PushDisplay {
   }
   displayLoop () {
     this.updateDisplay()
+    if (!this.installed) {
+      this.tickWorker.postMessage('request-tick')
+      return
+    }
     sendFrame(this.ctx, (error) => {
       if (error) { console.error('sendFrame Error', error) }
       this.frame++

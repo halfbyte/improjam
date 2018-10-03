@@ -66,3 +66,13 @@ I found myself with a mostly free weekend and took the chance to push this forwa
 - Mute and Solo tracks
 - Realtime Recording (this seems to work ok for now, might be a bit imprecise)
 
+## Controllers Pt.1 (2018-10-03) 
+
+Today I started to flesh out an Ableton Live set that will be the backbone of my first improjam live performance. On the way, I quickly found out that I definitely need a way to control synth params - The downside of the software only setup I'm striving for right now (mostly for convenient travelling) is that there are no additional knobs to play with on extra hardware - during jsconf.eu I had tons of hardware with me and I twiddled them knobs all the time.
+
+The way I solved this for now is that pushing the "Automate" button on Push changes into "Controller Mode" where the 8 knobs on top of the Push will act as Controller 71 - 79 (like they originally do on Push) and send them on the activated channel. That way I could define 64 controllers and MIDI map them in Ableton Live. The display shows a bar for the value (0-127) and the value. Ideally, later, I also want to be able to define a label for the control, so that I can show that on the display as well to help during the performance.
+
+I've also finally added swing (forward and backwards) as a global parameter in the sequencer.
+
+
+

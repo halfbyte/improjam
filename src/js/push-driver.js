@@ -126,9 +126,11 @@ export default class PushDriver extends Eventable {
       } else if (cc >= 102 && cc <= 109 && event.data[2] > 0) {
         this.trigger('push:channel:on', cc - 102)
       } else if (cc === 85 && val > 0) {
-        this.trigger('push:play')
+        this.trigger('push:function:on', 'play')
       } else if (cc === 86 && val > 0) {
         this.trigger('push:function:on', 'record')
+      } else if (cc === 89 && val > 0) {
+        this.trigger('push:function:on', 'automate')
       } else if (cc === 48 && val > 0) {
         this.trigger('push:function:on', 'select')
       } else if (cc === 48 && val === 0) {
@@ -148,11 +150,14 @@ export default class PushDriver extends Eventable {
       } else if (cc === 14) {
         const signed = val < 64 ? val : val - 128
         this.trigger('push:tempo', signed)
+      } else if (cc === 15) {
+        const signed = val < 64 ? val : val - 128
+        this.trigger('push:swing', signed)
       } else if (cc >= 71 && cc <= 78) {
         const signed = val < 64 ? val : val - 128
         this.trigger('push:encoder', cc - 71, signed)
       } else if (cc === 59 && val > 0) {
-        this.trigger('push:function:on', 'save')
+        this.trigger('push:function:on', 'user')
       } else if (cc === 60 && val > 0) {
         this.trigger('push:function:on', 'mute')
       } else if (cc === 60 && val === 0) {
@@ -241,6 +246,9 @@ export default class PushDriver extends Eventable {
   setAccent (on) {
     this.setFunctionLeds([[57, [0, on ? COLORS.white : COLORS['dark-grey']]]])
   }
+  setAutomate (on, recording) {
+   this.setFunctionLeds([[89, [0, on ? (recording ? COLORS.red : COLORS.green) : COLORS['dark-grey']]]]) 
+  }
   sendDiff (diff) {
     if (diff.length === 0) { return }
     diff.forEach((entry) => {
@@ -273,7 +281,7 @@ export default class PushDriver extends Eventable {
   }
   resetFunctionButtons () {
     const leds = []
-    const WHITE_BUTTONS = [55, 54, 48, 118, 59, 58]
+    const WHITE_BUTTONS = [55, 54, 59, 48, 118, 58]
     WHITE_BUTTONS.forEach((cc) => {
       leds.push([cc, [0, COLORS.white]])
     })
@@ -282,6 +290,7 @@ export default class PushDriver extends Eventable {
     this.setFunctionLeds(leds)
   }
   setPalette () {
+    if (!this.installed) { return }
     COLOR_VALUES.forEach((values, index) => {
       this.output.send([0xF0, 0x00, 0x21, 0x1D, 0x01, 0x01, 0x03, index,
         values[0] & 0x7F, values[0] >> 7 & 0x01,

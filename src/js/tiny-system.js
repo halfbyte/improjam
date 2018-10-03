@@ -52,6 +52,7 @@ class Channel {
   constructor (config, system) {
     this.system = system
     this.onmidimessage = this.onmidimessage.bind(this)
+    this.controlSlots = [0,0,0,0,0,0,0,0]
     this.setConfig(config)
   }
   attachListeners () {
@@ -111,6 +112,7 @@ class Sequencer {
       }
     }
     this.tempo = 120
+    this.swing = 0
     this.playing = false
     this.scheduleNextNotes = this.scheduleNextNotes.bind(this)
     this.tickWorker = new Worker('js/tick-worker.js')
@@ -157,7 +159,11 @@ class Sequencer {
 
     if (currentTime > this.nextTime - (perTick * 4)) {
       for (i = 0; i < 48; i++) {
-        const time = this.nextTime + (perTick * i)
+        var swingOff = 0
+        if ((this.tick + i) % 48 == 24) {
+          swingOff = this.swing / 2.0
+        }
+        const time = this.nextTime + (perTick * (i + swingOff))
         for (t = 0; t < numTracks; t++) {
           const track = this.tracks[t]
           const trackOffset = track.firstPattern * (16 * 24)
@@ -348,6 +354,17 @@ class Sequencer {
     this.tempo = newTempo
     m.redraw()
   }
+  changeSwing (inc) {
+    var newSwing = this.swing + inc
+    if (newSwing > 48) {
+      newSwing = 48
+    }
+    if (newSwing < -48) {
+      newSwing = -48
+    }
+    this.swing = newSwing
+    m.redraw()
+  }
 }
 
 class Scaler {
@@ -485,12 +502,12 @@ class MIDISystem extends Eventable {
       length: 24, // four quarter notes
       velocity: 100
     }]
-    this.setupPushBindings()
     this.load()
     this.initPushState()
   }
   initPushState () {
     this.pushDriver.setChannel(this.matrixView.selectedChannel)
+    this.pushDriver.setAutomate(this.controllerMode, this.sequencer.recording);
   }
   setupChannels () {
     let i
@@ -524,30 +541,17 @@ class MIDISystem extends Eventable {
       this.outputs[this.channels[track].outputDevice].send(data, time)
     }
   }
-  setupPushBindings () {
-    this.pushDriver.on('push:function:on', (fun, ...params) => {
-      if (fun === 'octave') {
-        if (params[0] === 'up') {
-          this.scaler.octaveUp()
-          m.redraw()
-        }
-        if (params[0] === 'down') {
-          this.scaler.octaveDown()
-          m.redraw()
-        }
-      } else if (fun === 'save') {
-        this.save()
-      }
-    })
-    this.pushDriver.on('push:channel:on', (channel) => {
-      this.matrixView.selectedChannel = channel
-      m.redraw()
-      this.pushDriver.setChannel(channel)
-    })
-    this.pushDriver.on('push:play', (channel) => {
-      this.sequencer.playPause()
-      m.redraw()
-    })
+  sendControl (channel, slot, increment) {
+    const oldValue = this.channels[channel].controlSlots[slot]
+    var newValue = oldValue + increment
+    if (newValue > 127) { newValue = 127 }
+    if (newValue < 0) { newValue = 0 }
+    if (oldValue !== newValue) {
+      this.channels[channel].controlSlots[slot] = newValue
+      this.sendChannelMessage(channel, [0xb0, slot + 71, newValue], 0);
+    }
+
+    
   }
   // TODO: Implement a real save.
   save () {
@@ -564,6 +568,7 @@ class MIDISystem extends Eventable {
       scaler: this.scaler.getConfig(),
       settings: {
         tempo: this.sequencer.tempo,
+        swing: this.sequencer.swing,
         accent: this.matrixView.accent
       }
     }
@@ -602,6 +607,7 @@ class MIDISystem extends Eventable {
         }
         if (parsed.settings) {
           this.sequencer.tempo = parsed.settings.tempo || 120
+          this.sequencer.swing = parsed.settings.swing || 0
           this.matrixView.accent = !!parsed.settings.accent
         }
       }
@@ -648,6 +654,7 @@ class MatrixView {
     this.selectMode = false
     this.deleteMode = false
     this.muteMode = false
+    this.controllerMode = false
     this.accent = false
     this.system.pushDriver.on('push:matrix:on', (led, velocity) => {
       this.ledClick(led, velocity)
@@ -682,7 +689,7 @@ class MatrixView {
         }
       }
     })
-    this.system.pushDriver.on('push:function:on', (fun) => {
+    this.system.pushDriver.on('push:function:on', (fun, ...params) => {
       if (fun === 'select') {
         this.selectMode = true
       }
@@ -706,6 +713,27 @@ class MatrixView {
       }
       if (fun === 'record') {
         this.system.sequencer.recording = !this.system.sequencer.recording
+        m.redraw()
+      }
+      if (fun === 'octave') {
+        if (params[0] === 'up') {
+          this.system.scaler.octaveUp()
+          m.redraw()
+        }
+        if (params[0] === 'down') {
+          this.system.scaler.octaveDown()
+          m.redraw()
+        }
+      }
+      if (fun === 'automate') {
+        this.controllerMode = !this.controllerMode
+        this.system.pushDriver.setAutomate(this.controllerMode, this.system.recording);
+      }
+      if (fun === 'user') {
+        this.system.save()
+      }
+      if (fun === 'play') {
+        this.system.sequencer.playPause()
         m.redraw()
       }
     })
@@ -741,10 +769,15 @@ class MatrixView {
         } else if (encoder === 1) {
           this.system.scaler.editScale(increment)
         }
+      } else if (this.controllerMode) {
+        this.system.sendControl(this.selectedChannel, encoder, increment)
       }
     })
     this.system.pushDriver.on('push:tempo', (increment) => {
       this.sequencer.changeTempo(increment)
+    })
+    this.system.pushDriver.on('push:swing', (increment) => {
+      this.sequencer.changeSwing(increment)
     })
     this.system.pushDriver.on('push:mute-solo', (channel) => {
       if (this.muteMode) {
@@ -756,9 +789,15 @@ class MatrixView {
           this.system.soloChannel = channel
         }
       }
-
       m.redraw()
     })
+    this.system.pushDriver.on('push:channel:on', (channel) => {
+      this.selectedChannel = channel
+      this.system.pushDriver.setChannel(channel)
+      m.redraw()
+      
+    })
+
   }
   refreshLeds () {
     var i
@@ -781,6 +820,7 @@ class MatrixView {
     this.system.pushDriver.setAccent(this.accent)
     this.system.pushDriver.setPlaying(this.sequencer.playing)
     this.system.pushDriver.setRecording(this.sequencer.recording)
+    this.system.pushDriver.setAutomate(this.controllerMode, this.sequencer.recording)
 
     if (this.muteMode) {
       this.system.pushDriver.refreshMutes(this.system.channels)
