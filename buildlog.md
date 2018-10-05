@@ -74,5 +74,14 @@ The way I solved this for now is that pushing the "Automate" button on Push chan
 
 I've also finally added swing (forward and backwards) as a global parameter in the sequencer.
 
+Then I implemented sync output so that I can sync up Ableton effects to imrojam. I found some interesting quirks in my sequencer maths, but I got a MIDI spec conformant implementation in the end that sends out timing pulses all the time and then on start sends a start message and resets the internal tick counter. There are still some weird issues with Ableton lagging a bit behind (I assume it's not syncing on the correct tick) but that will have to wait.
+
+I've also fixed an issue where drum previews were too short if the triggered instrument doesn't have a proper one shot mode.
+
+And in the end I built in the possibility to have more than 16 drum sounds by allowing to switch through the octaves as with normal instruments.
+
+The one function I really want to have for the drum sequencer is to be able to retrigger drum sounds within a step, but for that I need to fix the "edit note" view for the drum sequencer, so that's going to be one of the next steps.
+
+The resulting Ableton Live set will probably be available as well after the first performance, but this will need *a lot* more work before I can use it. The idea behind the set is to have a good set of different sounds to be able to play different genres but make them relatively versatile by adding sensible controller mappings - and then keep it all in one big live set that will hopefully not tilt my poor little laptop.
 
 

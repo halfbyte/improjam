@@ -50,6 +50,22 @@ const COLOR_VALUES = [
   [255, 20, 255, 0]
 ]
 
+const ALL_FUNCTION_BUTTONS = [
+  3, 9, 102, 103, 104, 105, 106, 107, 108, 109, 30, 59,
+  118, 52, 110, 112,
+  119, 53, 11, 113,
+  60, 61, 29, 20, 21, 22, 23, 24, 25, 26, 27, 28, 46,
+  35, 43, 44, 47, 45,
+  117, 42,
+  116, 41,
+  88, 40, 56, 57,
+  87,
+  90, 39, 58, 31, 50, 51,
+  89, 38, 55,
+  86, 37, 62, 54, 63,
+  85, 36, 49, 48
+]
+
 export default class PushDriver extends Eventable {
   constructor (midiAccess) {
     super()
@@ -241,13 +257,13 @@ export default class PushDriver extends Eventable {
     this.setFunctionLeds([[85, [0, playing ? COLORS.green : COLORS['dark-grey']]]])
   }
   setRecording (recording) {
-    this.setFunctionLeds([[86, [0, recording ? COLORS.red : COLORS['dark-grey']]]])
+    this.setFunctionLeds([[86, [recording ? 14 : 0, recording ? COLORS.red : COLORS['dark-grey']]]])
   }
   setAccent (on) {
     this.setFunctionLeds([[57, [0, on ? COLORS.white : COLORS['dark-grey']]]])
   }
   setAutomate (on, recording) {
-   this.setFunctionLeds([[89, [0, on ? (recording ? COLORS.red : COLORS.green) : COLORS['dark-grey']]]]) 
+    this.setFunctionLeds([[89, [0, on ? (recording ? COLORS.red : COLORS.green) : COLORS['dark-grey']]]])
   }
   sendDiff (diff) {
     if (diff.length === 0) { return }
@@ -280,6 +296,9 @@ export default class PushDriver extends Eventable {
     return diff
   }
   resetFunctionButtons () {
+    ALL_FUNCTION_BUTTONS.forEach((cc) => {
+      this.sendSingleFunctionEntry(cc, [0,0])
+    })
     const leds = []
     const WHITE_BUTTONS = [55, 54, 59, 48, 118, 58]
     WHITE_BUTTONS.forEach((cc) => {

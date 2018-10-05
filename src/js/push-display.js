@@ -3,7 +3,7 @@ const { initPush, sendFrame } = require('ableton-push-canvas-display')
 
 export default class PushDisplay {
   constructor (system) {
-    console.log("WH")
+    console.log('WH')
     this.system = system
     this.canvas = document.getElementById('push-display-canvas')
     this.ctx = this.canvas.getContext('2d')
@@ -68,13 +68,13 @@ export default class PushDisplay {
       ctx.fillText('Scale', 180, 50)
       ctx.fillText(`${this.system.scaler.currentScale}`, 180, 70)
     } else if (this.system.matrixView && this.system.matrixView.controllerMode) {
-      for(var slot=0;slot<8;slot++) {
+      for (var slot = 0; slot < 8; slot++) {
         const slotValue = this.system.channels[this.system.matrixView.selectedChannel].controlSlots[slot]
         const width = slotValue / 127.0 * 110
         ctx.fillStyle = '#ccc'
         ctx.fillRect(5 + (120 * slot), 30, width, 20)
         ctx.textAlign = 'center'
-        ctx.fillStyle = "#fff"
+        ctx.fillStyle = '#fff'
         ctx.fillText(`${slotValue}`, 120 * slot + 60, 47)
       }
     }
@@ -83,8 +83,6 @@ export default class PushDisplay {
       ctx.textAlign = 'left'
       ctx.fillText(`Step: ${this.system.matrixView.selectedNote}`, 370, 150)
     }
-
-
 
     ctx.fillStyle = '#ccc'
     ctx.textAlign = 'center'

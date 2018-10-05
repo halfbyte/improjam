@@ -52,7 +52,7 @@ class Channel {
   constructor (config, system) {
     this.system = system
     this.onmidimessage = this.onmidimessage.bind(this)
-    this.controlSlots = [0,0,0,0,0,0,0,0]
+    this.controlSlots = [0, 0, 0, 0, 0, 0, 0, 0]
     this.setConfig(config)
   }
   attachListeners () {
@@ -121,16 +121,19 @@ class Sequencer {
     this.realStep = 0
     this.oldRealStep = 0
     this.openNotes = []
-  }
-  start () {
-    this.playing = true
-    this.startTime = performance.now()
+    this.syncOut = -1
     this.nextTime = performance.now()
     this.tick = 0
     this.scheduleNextNotes()
   }
+  start () {
+    this.playing = true
+    this.tick = 0
+    this.system.sendStart(this.syncOut, this.nextTime)
+  }
   stop () {
     this.playing = false
+    this.system.sendStop(this.syncOut, this.nextTime)
   }
   playPause () {
     if (this.playing) {
@@ -139,8 +142,7 @@ class Sequencer {
       this.start()
     }
   }
-  scheduleNextNotes () {
-    if (!this.playing) { return }
+  scheduleNextNotes () {    
     let i, t
     const numTracks = this.tracks.length
     const currentTime = performance.now()
@@ -148,33 +150,49 @@ class Sequencer {
     const perTick = 60 / (this.tempo * 24 * 4) * 1000
 
     const diff = (this.nextTime - currentTime) / perTick
+
+    if (this.playing) {
     var realTick = Math.floor(this.tick - diff)
-    if (realTick < 0) { realTick = 256 * 24 + realTick }
-    this.realTick = realTick
-    this.realStep = Math.floor(realTick / 24)
-    if (this.realStep !== this.oldRealStep) {
-      m.redraw()
-      this.oldRealStep = this.realStep
+      if (realTick < 0) { realTick = 256 * 24 + realTick }
+      this.realTick = realTick
+      this.realStep = Math.floor(realTick / 24)
+      if (this.realStep !== this.oldRealStep) {
+        m.redraw()
+        this.oldRealStep = this.realStep
+      }      
+    } else {
+      this.realStep = 0
+      if (this.realStep !== this.oldRealStep) {
+        m.redraw()
+        this.oldRealStep = this.realStep
+      }      
     }
 
     if (currentTime > this.nextTime - (perTick * 4)) {
       for (i = 0; i < 48; i++) {
-        var swingOff = 0
-        if ((this.tick + i) % 48 == 24) {
-          swingOff = this.swing / 2.0
+
+        if (i % 4 === 0) {
+          this.sendTick(this.nextTime + (perTick * (i)))
         }
-        const time = this.nextTime + (perTick * (i + swingOff))
-        for (t = 0; t < numTracks; t++) {
-          const track = this.tracks[t]
-          const trackOffset = track.firstPattern * (16 * 24)
-          const trackLength = track.length * 16 * 24
-          const tick = ((this.tick + i) % trackLength) + trackOffset
-          if (track.data[tick]) {
-            track.data[tick].forEach((event) => {
-              if (event.type === 'note') {
-                this.sendNote(t, time, event.note, event.velocity, event.length * perTick)
-              }
-            })
+
+        if (this.playing) {
+          var swingOff = 0
+          if ((this.tick + i) % 48 === 24) {
+            swingOff = this.swing / 2.0
+          }
+          const time = this.nextTime + (perTick * (i + swingOff))
+          for (t = 0; t < numTracks; t++) {
+            const track = this.tracks[t]
+            const trackOffset = track.firstPattern * (16 * 24)
+            const trackLength = track.length * 16 * 24
+            const tick = ((this.tick + i) % trackLength) + trackOffset
+            if (track.data[tick]) {
+              track.data[tick].forEach((event) => {
+                if (event.type === 'note') {
+                  this.sendNote(t, time, event.note, event.velocity, event.length * perTick)
+                }
+              })
+            }
           }
         }
       }
@@ -184,6 +202,9 @@ class Sequencer {
     }
     this.tickWorker.postMessage('request-tick')
     // setTimeout(this.scheduleNextNotes, 10)
+  }
+  sendTick (time) {
+    this.syncOut && this.system.sendSync(this.syncOut, time)
   }
   sendNote (track, time, note, velocity, length) {
     this.system.sendChannelMessage(
@@ -245,12 +266,14 @@ class Sequencer {
     this.sendNote(track, performance.now(), note, velocity, 1)
   }
   previewNote (track, note, velocity) {
+    console.log('PNOn', track, note, velocity)
     this.system.sendChannelMessage(
       track,
       [144, note, velocity]
     )
   }
   previewNoteOff (track, note) {
+    console.log('PNOff', track, note)
     this.system.sendChannelMessage(
       track,
       [128, note, 0]
@@ -507,7 +530,7 @@ class MIDISystem extends Eventable {
   }
   initPushState () {
     this.pushDriver.setChannel(this.matrixView.selectedChannel)
-    this.pushDriver.setAutomate(this.controllerMode, this.sequencer.recording);
+    this.pushDriver.setAutomate(this.controllerMode, this.sequencer.recording)
   }
   setupChannels () {
     let i
@@ -548,10 +571,23 @@ class MIDISystem extends Eventable {
     if (newValue < 0) { newValue = 0 }
     if (oldValue !== newValue) {
       this.channels[channel].controlSlots[slot] = newValue
-      this.sendChannelMessage(channel, [0xb0, slot + 71, newValue], 0);
+      this.sendChannelMessage(channel, [0xb0, slot + 71, newValue], 0)
     }
-
-    
+  }
+  sendSync (output, time) {
+    if (!this.sequencer) { return }
+    if (this.sequencer.syncOut === '-1' || this.sequencer.syncOut === -1) { return }
+    this.outputs[this.sequencer.syncOut].send([0xF8], time)
+  }
+  sendStart (output, time) {
+    if (!this.sequencer) { return }
+    if (this.sequencer.syncOut === '-1' || this.sequencer.syncOut === -1) { return }
+    this.outputs[this.sequencer.syncOut].send([0xFA], time)
+  }
+  sendStop (output, time) {
+    if (!this.sequencer) { return }
+    if (this.sequencer.syncOut === '-1' || this.sequencer.syncOut === -1) { return }
+    this.outputs[this.sequencer.syncOut].send([0xFC], time)
   }
   // TODO: Implement a real save.
   save () {
@@ -569,6 +605,7 @@ class MIDISystem extends Eventable {
       settings: {
         tempo: this.sequencer.tempo,
         swing: this.sequencer.swing,
+        syncOut: this.sequencer.syncOut,
         accent: this.matrixView.accent
       }
     }
@@ -608,6 +645,7 @@ class MIDISystem extends Eventable {
         if (parsed.settings) {
           this.sequencer.tempo = parsed.settings.tempo || 120
           this.sequencer.swing = parsed.settings.swing || 0
+          this.sequencer.syncOut = parsed.settings.syncOut || -1
           this.matrixView.accent = !!parsed.settings.accent
         }
       }
@@ -727,7 +765,7 @@ class MatrixView {
       }
       if (fun === 'automate') {
         this.controllerMode = !this.controllerMode
-        this.system.pushDriver.setAutomate(this.controllerMode, this.system.recording);
+        this.system.pushDriver.setAutomate(this.controllerMode, this.system.recording)
       }
       if (fun === 'user') {
         this.system.save()
@@ -795,9 +833,7 @@ class MatrixView {
       this.selectedChannel = channel
       this.system.pushDriver.setChannel(channel)
       m.redraw()
-      
     })
-
   }
   refreshLeds () {
     var i
@@ -936,6 +972,7 @@ class MatrixView {
             this.sequencer.previewNote(this.selectedChannel, note, velocity)
           }
         } else {
+          console.log("NOTE ON", note)
           this.sequencer.previewNote(this.selectedChannel, note, velocity)
         }
       }
@@ -957,33 +994,40 @@ class MatrixView {
         if (this.deleteMode) {
           this.sequencer.deleteNote(this.selectedChannel, this.selectedPattern, this.noteForSelectedDrum())
         } else if (!this.selectMode) {
-          this.sequencer.previewNoteHit(this.selectedChannel, this.noteForSelectedDrum(), velocity)
+          this.sequencer.previewNote(this.selectedChannel, this.noteForSelectedDrum(), velocity)
           this.sequencer.recordNoteOn(this.selectedChannel, this.noteForSelectedDrum(), velocity)
-          this.sequencer.recordNoteOff(this.selectedChannel, this.noteForSelectedDrum())
         }
       }
     }
     m.redraw()
   }
   ledOff (index) {
-    if (index >= 16 && index < 48 && this.system.channels[this.selectedChannel].sequencerMode === 'notes') {
-      if (this.selectedNote === index - 16) {
+    if (this.system.channels[this.selectedChannel].sequencerMode === 'notes') {
+      if (index >= 16 && index < 48 && this.selectedNote === index - 16) {
         this.selectedNote = null
       }
-    }
-    if (index >= 48) {
-      const row = 1 - Math.floor((index - 48) / 8)
-      const pos = index % 8
-      const note = this.system.scaler.note(row, pos)
-      this.sequencer.previewNoteOff(this.selectedChannel, note)
-      this.sequencer.recordNoteOff(this.selectedChannel, note)
+      if (index >= 48) {
+
+        const row = 1 - Math.floor((index - 48) / 8)
+        const pos = index % 8
+        const note = this.system.scaler.note(row, pos)
+        console.log("NOTE OFF", note)
+        this.sequencer.previewNoteOff(this.selectedChannel, note)
+        this.sequencer.recordNoteOff(this.selectedChannel, note)
+      }
+    } else {
+      this.sequencer.previewNoteOff(this.selectedChannel, this.noteForSelectedDrum())
+      this.sequencer.recordNoteOff(this.selectedChannel, this.noteForSelectedDrum())
     }
     m.redraw()
   }
   noteForSelectedDrum () {
     const mode = this.system.channels[this.selectedChannel].sequencerMode
     if (mode === 'drums') {
-      return this.selectedDrum + 36
+      const row  = Math.floor(this.selectedDrum / 8)
+      const col = this.selectedDrum % 8
+      const pad = (1 - row) * 8 + col
+      return pad + this.system.scaler.currentOctave * 12
     } else {
       if (this.selectedDrum < DRUM_MODES[mode].length) {
         return DRUM_MODES[mode][this.selectedDrum]

@@ -5,10 +5,11 @@ class Select {
     this.options = vnode.attrs.options
     this.value = vnode.attrs.value
     this.onchange = vnode.attrs.onchange
+    this.nullValue = vnode.attrs.nullValue || 'Any'
   }
   view (vnode) {
     return m('select', { onchange: (event) => this.change(event) }, this.options.map((option) => {
-      const optname = option === -1 ? 'Any' : option
+      const optname = option === -1 ? this.nullValue : option
       return m('option', { value: option, selected: option === vnode.attrs.value }, optname)
     }))
   }
@@ -16,15 +17,6 @@ class Select {
     if (this.onchange) {
       this.onchange(event.target.value)
     }
-  }
-}
-
-class NoteSelect extends Select {
-  constructor (vnode) {
-    super(vnode)
-    this.options = [
-      'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'
-    ]
   }
 }
 
@@ -86,9 +78,16 @@ export default class App {
     this.allOutputs = Object.keys(this.system.outputs)
     this.allOutputsPlusAny = [-1].concat(this.allOutputs)
   }
-  view () {
+  view () {
+    var system = this.system
     return [
       m('button', { onclick: () => this.system.save() }, 'Save'),
+      m('div', [
+        m('label', [
+          'Sync:',
+          m(Select, { options: this.allOutputsPlusAny, nullValue: 'None', value: system.sequencer.syncOut, onchange (val) { system.sequencer.syncOut = val } })
+        ])
+      ]),
       m('h2', 'Channels'),
       m('div', this.system.channels.map((channel, i) => {
         return m('div', [
