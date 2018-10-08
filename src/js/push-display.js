@@ -1,6 +1,9 @@
 /* global Worker */
+import CONTROLLER_NAMES from './controller-names.js'
 const { initPush, sendFrame } = require('ableton-push-canvas-display')
 
+const STANDARD_FONT = "16px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+const MODE_FONT = "italic 48px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
 export default class PushDisplay {
   constructor (system) {
     console.log('WH')
@@ -37,7 +40,7 @@ export default class PushDisplay {
     ctx.fillStyle = 'rgba(8,8,8,1)'
     ctx.fillText('improjam', 480, 144)
 
-    ctx.font = "16px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+    ctx.font = STANDARD_FONT
     ctx.textAlign = 'start'
     ctx.fillStyle = '#fff'
     if (this.system.sequencer) {
@@ -54,12 +57,21 @@ export default class PushDisplay {
       const time = (this.system.matrixView.selectedPattern * 16 + this.system.matrixView.editNote) * 24
       const notes = this.system.sequencer.tracks[this.system.matrixView.selectedChannel].data[time]
       if (notes && notes.length > 0) {
-        const note = notes[0] // only display data for first note
-        ctx.textAlign = 'center'
-        ctx.fillText('Length', 60, 50)
-        ctx.fillText(`${note.length / 24}`, 60, 70)
-        ctx.fillText('Velocity', 180, 50)
-        ctx.fillText(`${note.velocity}`, 180, 70)
+        var note = notes[0] // only display data for first note
+        if (this.system.matrixView.noteForSelectedDrum()) {
+          note = notes.find((n) => n.note === this.system.matrixView.noteForSelectedDrum())
+        }
+        if (note) {
+          ctx.textAlign = 'center'
+          ctx.fillText('Length', 60, 50)
+          ctx.fillText(`${note.length / 24}`, 60, 70)
+          ctx.fillText('Velocity', 180, 50)
+          ctx.fillText(`${note.velocity}`, 180, 70)
+          ctx.fillText('Repeat', 300, 50)
+          ctx.fillText(`${note.repeat || 1}`, 300, 70)          
+          ctx.textAlign = 'left'
+          ctx.fillText(`Step: ${this.system.matrixView.selectedNote}`, 850, 150)
+        }
       }
     } else if (this.system.matrixView && this.system.matrixView.scaleMode) {
       ctx.textAlign = 'center'
@@ -70,19 +82,18 @@ export default class PushDisplay {
     } else if (this.system.matrixView && this.system.matrixView.controllerMode) {
       for (var slot = 0; slot < 8; slot++) {
         const slotValue = this.system.channels[this.system.matrixView.selectedChannel].controlSlots[slot]
+        const channel = this.system.channels[this.system.matrixView.selectedChannel].outputChannel
         const width = slotValue / 127.0 * 110
         ctx.fillStyle = '#ccc'
         ctx.fillRect(5 + (120 * slot), 30, width, 20)
         ctx.textAlign = 'center'
         ctx.fillStyle = '#fff'
         ctx.fillText(`${slotValue}`, 120 * slot + 60, 47)
+        if (CONTROLLER_NAMES[channel][slot]) {
+          ctx.fillText(`${CONTROLLER_NAMES[channel][slot]}`, 120 * slot + 60, 67)  
+        }        
       }
-    }
-
-    if (this.system.matrixView && this.system.matrixView.selectedNote != null) {
-      ctx.textAlign = 'left'
-      ctx.fillText(`Step: ${this.system.matrixView.selectedNote}`, 370, 150)
-    }
+    } 
 
     ctx.fillStyle = '#ccc'
     ctx.textAlign = 'center'
@@ -99,6 +110,53 @@ export default class PushDisplay {
         ctx.fillText(`${i + 1}`, i * 120 + 60, 17)
       }
     }
+
+    if (this.system.ui && this.system.ui.copyMode) {
+      ctx.font = MODE_FONT
+      ctx.textAlign = 'left'
+      ctx.fillStyle = "#f80"
+      var text = "copy"
+      if (this.system.ui.copySource) {
+        const src = this.system.ui.copySource
+        text += `[${src[0] + 1}:${src[1] + 1}]`
+      }
+      if (this.system.ui.copyDest) {
+        const dest = this.system.ui.copyDest
+        text += `>[${dest[0] + 1}:${dest[1] + 1}]` 
+      }
+      ctx.fillText(text, 480, 100)  
+    } else if (this.system.ui && this.system.ui.deleteMode) {
+      ctx.font = MODE_FONT
+      ctx.textAlign = 'left'
+      ctx.fillStyle = "#f00"
+      var text = "delete"
+      if (this.system.ui.deletedPattern) {
+        const [c, p] = this.system.ui.deletedPattern
+        text += `[${c + 1}:${p + 1}]`
+      }
+      ctx.fillText(text, 480, 100)
+    } else if (this.system.ui && this.system.ui.muteMode) {
+      ctx.font = MODE_FONT
+      ctx.textAlign = 'left'
+      ctx.fillStyle = "#f00"
+      ctx.fillText("mute", 480, 100)
+    } else if (this.system.ui && this.system.ui.soloMode) {
+      ctx.font = MODE_FONT
+      ctx.textAlign = 'left'
+      ctx.fillStyle = "#ff0"
+      ctx.fillText("solo", 480, 100)
+    } else if (this.system.ui && this.system.ui.scaleMode) {
+      ctx.font = MODE_FONT
+      ctx.textAlign = 'left'
+      ctx.fillStyle = "#fff"
+      ctx.fillText("scale", 480, 100)
+    } else if (this.system.ui && this.system.ui.selectMode) {
+      ctx.font = MODE_FONT
+      ctx.textAlign = 'left'
+      ctx.fillStyle = "#fff"
+      ctx.fillText("select", 480, 100)
+    }
+
   }
   displayLoop () {
     this.updateDisplay()

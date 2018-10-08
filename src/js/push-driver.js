@@ -112,7 +112,7 @@ export default class PushDriver extends Eventable {
       if (port.name.match(/Ableton Push 2 Live Port/)) {
         device = port
       // Windows
-      } else if (port.name.match(/Ableton Push 2/) && !port.name.match(/MIDI(IN|OUT)/)) {
+      } else if (!device && port.name.match(/Ableton Push 2/) && !port.name.match(/MIDI(IN|OUT)/)) {
         device = port
       }
     })
@@ -151,6 +151,10 @@ export default class PushDriver extends Eventable {
         this.trigger('push:function:on', 'play')
       } else if (cc === 86 && val > 0) {
         this.trigger('push:function:on', 'record')
+      } else if (cc === 88 && val > 0) {
+        this.trigger('push:function:on', 'duplicate')
+      } else if (cc === 88 && val === 0) {
+        this.trigger('push:function:off', 'duplicate')
       } else if (cc === 89 && val > 0) {
         this.trigger('push:function:on', 'automate')
       } else if (cc === 48 && val > 0) {
@@ -280,6 +284,7 @@ export default class PushDriver extends Eventable {
   sendLedsDiff (diff) {
     if (diff.length === 0) { return }
     diff.forEach((entry) => {
+      console.log("SLD", entry[0], entry[1])
       this.sendSingleFunctionEntry(entry[0], entry[1])
     })
   }
@@ -306,7 +311,7 @@ export default class PushDriver extends Eventable {
       this.sendSingleFunctionEntry(cc, [0, 0])
     })
     const leds = []
-    const WHITE_BUTTONS = [55, 54, 59, 48, 118, 58]
+    const WHITE_BUTTONS = [55, 54, 59, 48, 118, 58, 88]
     WHITE_BUTTONS.forEach((cc) => {
       leds.push([cc, [0, COLORS.white]])
     })

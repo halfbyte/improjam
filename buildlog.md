@@ -84,4 +84,20 @@ The one function I really want to have for the drum sequencer is to be able to r
 
 The resulting Ableton Live set will probably be available as well after the first performance, but this will need *a lot* more work before I can use it. The idea behind the set is to have a good set of different sounds to be able to play different genres but make them relatively versatile by adding sensible controller mappings - and then keep it all in one big live set that will hopefully not tilt my poor little laptop.
 
+## Cleanup, Sync, Note Repeat, Copy (2018-10-08)
+
+Originally I hoped to get some work done on the weekend, but unfortunately I spent the few hours I had (the weather was too good to spend at a keyboard) on trying to figure out a weird Windows 10 issue where npm wouldn't find binaries in `node_modules/.bin`. I still don't know what happened, but I have it fixed somehow. So now improjam is fully windows compatible, even the display works fine after installing the correct WinUSB drivers. The MIDI port names are as crappy as usual on Windows, but nothing a few Regexps can't fix.
+
+While extending the Ableton set further (I added a couple of Trap style instruments I used on a recent track sketch), I tried to fix my sync issue, where notes coming from improjam are registered way too late in Ableton Live. I now have a fix that works okay-ish - I slightly changed the moment I send out the start command and I also tell Ableton to slightly correct the clock (by -28ms on my iMac). This needs more tests, especially on other computers, but I would love to understand what's going on here. I think I need to play around with this a little more to understand the issue, probably also with other hardware that's able to send sync signals, such as Circuit. I suspect Ableton being at fault here, as MIDI Monitor shows the MIDI messages (Sync and Notes) coming in with identical timestamps but Ableton records the notes as if they came it a lot later.
+
+I've also implemented the note repeat feature I needed for the obvious trap hihats. Not sure if this is the best solution, but it works and it is quite fun. "Repeat" is simply another note parameter such as length and velocity.
+
+For this to work I also finally had to fix the "note edit" mode for drums.
+
+I also built a pattern copy which even works across tracks. And to give a bit of visual feedback, I've added a couple of "mode" displays, so that the operations are shown on the screen.
+
+Last but not least, I hacked in a simple way of showing controller names below the controller knobs. This should be configurable (Maybe even via the App UI) but for now it's just a module containing a 2d array.
+
+Also, I finally cleaned up the repo, renamed a couple of files, deleted everything that wasn't needed and extracted all classes from `system.js` to single modules. 
+
 
