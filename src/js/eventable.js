@@ -22,9 +22,7 @@ class Eventable {
   }
   trigger (event, ...data) {
     if (this.listeners[event] && this.listeners[event].size > 0) {
-      this.listeners[event].forEach((callback) => {
-        callback(...data)
-      })
+      this.listeners[event].forEach((listener) => listener(...data))
     }
   }
 }

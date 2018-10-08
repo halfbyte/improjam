@@ -107,10 +107,16 @@ export default class PushDriver extends Eventable {
   findDevice (ports) {
     var device = null
     ports.forEach((port) => {
+      // MAC
+      console.log('PORT', port.name)
       if (port.name.match(/Ableton Push 2 Live Port/)) {
+        device = port
+      // Windows
+      } else if (port.name.match(/Ableton Push 2/) && !port.name.match(/MIDI(IN|OUT)/)) {
         device = port
       }
     })
+    console.log('FOUND', device)
     return device
   }
   onMidiInput (event) {
@@ -297,7 +303,7 @@ export default class PushDriver extends Eventable {
   }
   resetFunctionButtons () {
     ALL_FUNCTION_BUTTONS.forEach((cc) => {
-      this.sendSingleFunctionEntry(cc, [0,0])
+      this.sendSingleFunctionEntry(cc, [0, 0])
     })
     const leds = []
     const WHITE_BUTTONS = [55, 54, 59, 48, 118, 58]
