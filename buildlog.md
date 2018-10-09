@@ -100,4 +100,23 @@ Last but not least, I hacked in a simple way of showing controller names below t
 
 Also, I finally cleaned up the repo, renamed a couple of files, deleted everything that wasn't needed and extracted all classes from `system.js` to single modules. 
 
+## Chromatic Keyboard, Active Note Display, Step bars (2018-10-09)
+
+Finally I built the chromatic note display so that I can play notes outside of the scale. I think I should activate this differently, not by changing the scale but by maybe pressing the (currently unused) Note button.
+
+I also finally tackled the "active note display" which highlights the notes currently played in the keyboard / drum selection section. Not only does this look cool, it is also valuable feedback.
+
+I also quickly implemented a step indicator with some sort of progress bar at the very bottom of the push display which should help with anchoring during live recording.
+
+I also greatly enhanced the Live set, but there's so much left to do. The drums need some work and I need a sampler and some cool JS related vocal samples. I think I need to bring my pocket recorder to be able to record these, or maybe I can salvage something from the Nested Loops performances.
+
+There are a couple of high priority items left open on my technical backlog as well, but I have two long train rides left until the first live performance and three evenings with a good chance of some time to work on this.
+
+
+
+
+
+
+
+
 

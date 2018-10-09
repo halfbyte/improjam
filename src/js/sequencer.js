@@ -59,6 +59,13 @@ export default class Sequencer {
       this.start()
     }
   }
+  notesForStep(t, step) {
+    const track = this.tracks[t]
+    const trackOffset = track.firstPattern * (16 * 24)
+    const trackLength = track.length * 16 * 24
+    const tick = ((step * 24) % trackLength) + trackOffset
+    return track.data[tick]
+  }
   scheduleNextNotes () {
     let i, t
     const numTracks = this.tracks.length
@@ -135,7 +142,6 @@ export default class Sequencer {
         time + (length * perTick)
       )      
     } else {
-      console.log("REPEAT", repeat, length)
       const stepLen = 24 * perTick / repeat
       const steps = (length / 24) * repeat
       for(var i=0;i<steps;i++) {
@@ -271,7 +277,6 @@ export default class Sequencer {
     }
   }
   clampParamToLimits(value, param) {
-    console.log("CLAMP", value, param)
     if (value < PARAM_LIMITS[param][0]) { value = PARAM_LIMITS[param][0] }
     if (value > PARAM_LIMITS[param][1]) { value = PARAM_LIMITS[param][1] }
     return value

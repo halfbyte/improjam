@@ -7,6 +7,18 @@ const SCALEMAPS = {
   'min-m': [0, 2, 3, 5, 7, 9, 11],
   'maj': [0, 2, 4, 5, 7, 9, 10]
 }
+
+const CHROMATIC_NOTES = [
+  [0, 2, 4, 5, 7, 9, 11, 12],
+  [null, 1, 3, null, 6, 8, 10, null],
+]
+const CHROMATIC_SLOTS = [
+  [0, 0], [1, 1], [0, 1], [1, 2],
+  [0, 2], [0, 3], [1, 4], [0, 4],
+  [1, 5], [0, 5], [1, 6], [0, 6],
+  [0, 7], 
+]
+
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const OCTAVES = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -22,19 +34,32 @@ export default class Scaler {
     this.currentOctave = 3
   }
   note (row, pos) {
-    // TODO: Build chromatic mode
+    if (this.currentScale === 'chromatic') {
+      const keyNote = CHROMATIC_NOTES[row][pos]
+      if (keyNote != null) {
+        return this.currentOctave * 12  + keyNote  
+      }
+      return
+    }
     const map = this.SCALEMAPS[this.currentScale] || this.SCALEMAPS['chromatic']
     const rootNote = this.NOTES.indexOf(this.currentRootNote)
     const noteInRow = map[pos % 7]
     const extraRow = Math.floor(pos / 7)
-    const octaveNote = (this.currentOctave + extraRow + row + 1) * 12
+    const octaveNote = (this.currentOctave + extraRow + row) * 12
+    const finalNote = octaveNote + rootNote + noteInRow
+    if (finalNote < 0 || finalNote > 127) { return }
     return octaveNote + rootNote + noteInRow
   }
   rowAndPos (note) {
-    // TODO: Build chromatic mode
+    if (this.currentScale === 'chromatic') {
+      const octaveNote = this.currentOctave * 12
+      const baseNote = note - octaveNote
+      if (baseNote < 0 || baseNote > 12) { return [null, null] }
+      return [1-CHROMATIC_SLOTS[baseNote][0], CHROMATIC_SLOTS[baseNote][1]]
+    }
     const map = this.SCALEMAPS[this.currentScale] || this.SCALEMAPS['chromatic']
     const rootNote = this.NOTES.indexOf(this.currentRootNote)
-    const octaveNote = (this.currentOctave + 1) * 12
+    const octaveNote = (this.currentOctave) * 12
     const baseNote = note - octaveNote - rootNote
 
     const row = 1 - Math.floor(baseNote / 12)
@@ -43,7 +68,7 @@ export default class Scaler {
   }
   octaveUp () {
     this.currentOctave++
-    if (this.currentOctave > 10) { this.currentOctave = 10 }
+    if (this.currentOctave > 9) { this.currentOctave = 9 }
   }
   octaveDown () {
     this.currentOctave--

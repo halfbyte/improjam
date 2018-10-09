@@ -4,6 +4,7 @@ const { initPush, sendFrame } = require('ableton-push-canvas-display')
 
 const STANDARD_FONT = "16px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
 const MODE_FONT = "italic 48px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+const STEP_FONT = "48px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
 export default class PushDisplay {
   constructor (system) {
     console.log('WH')
@@ -41,9 +42,17 @@ export default class PushDisplay {
     ctx.fillText('improjam', 480, 144)
 
     ctx.font = STANDARD_FONT
-    ctx.textAlign = 'start'
-    ctx.fillStyle = '#fff'
+    
     if (this.system.sequencer) {
+
+      const s = this.system.sequencer.realStep % 16
+      ctx.fillStyle = 'rgba(128, 128, 128,0.3)'
+      ctx.font = STEP_FONT
+      ctx.textAlign = 'center'
+      ctx.fillRect(0, 150, (s+1) * 60, 10)
+      ctx.fillStyle = '#fff'
+      ctx.font = STANDARD_FONT
+      ctx.textAlign = 'start'
       ctx.fillText(`Step: ${this.system.sequencer.realStep}`, 10, 150)
       ctx.fillText(`Tempo: ${this.system.sequencer.tempo}`, 250, 150)
       ctx.fillText(`Swing: ${this.system.sequencer.swing}`, 370, 150)
@@ -155,6 +164,11 @@ export default class PushDisplay {
       ctx.textAlign = 'left'
       ctx.fillStyle = "#fff"
       ctx.fillText("select", 480, 100)
+    } else if (this.system.sequencer && this.system.sequencer.recording) {
+      ctx.font = MODE_FONT
+      ctx.textAlign = 'left'
+      ctx.fillStyle = "#f00"
+      ctx.fillText("record!", 480, 100)
     }
 
   }

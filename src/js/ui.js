@@ -12,7 +12,8 @@ const COLOR_NAMES = {
   note: 'blue',
   rootNote: 'cyan',
   selectedNote: 'light-blue',
-  selectedRootNote: 'light-cyan'
+  selectedRootNote: 'light-cyan',
+  activeNote: 'white'
 }
 
 const DRUM_MODES = {
@@ -266,6 +267,11 @@ export default class UI {
         this.leds[48 + i] = COLOR_NAMES.note
       }
     }
+    if (this.system.scaler.currentScale === 'chromatic') {
+      this.leds[48] = 'off'
+      this.leds[51] = 'off'
+      this.leds[55] = 'off'
+    }
     if (this.selectedNote != null && track.data[24 * (this.selectedNote + (this.selectedPattern * 16))]) {
       const notes = track.data[24 * (this.selectedNote + (this.selectedPattern * 16))]
       notes.forEach((note) => {
@@ -286,6 +292,22 @@ export default class UI {
         }
       })
     }
+    if (this.sequencer && this.sequencer.playing) {
+      const notes = this.sequencer.notesForStep(this.selectedChannel, this.sequencer.realStep)
+
+      if (notes && notes.length > 0) {
+        notes.forEach((note) => {
+          const [row, pos] = this.system.scaler.rowAndPos(note.note)
+          if (pos != null) {
+            if (row >= 0 && row <= 1) {
+              const led = 48 + (row) * 8 + pos
+              this.leds[led] = COLOR_NAMES.activeNote
+            }          
+          }
+        })
+      }
+    }
+    
   }
   refreshForDrumsSequencer (mode) {
     var i
@@ -310,6 +332,19 @@ export default class UI {
         this.leds[i + 48] = COLOR_NAMES.note
       }
       this.leds[this.selectedDrum + 48] = COLOR_NAMES.selectedNote
+      if (this.sequencer && this.sequencer.playing) {
+        const notes = this.sequencer.notesForStep(this.selectedChannel, this.sequencer.realStep)
+
+        if (notes && notes.length > 0) {
+          notes.forEach((note) => {
+            const pad = this.selectedDrumForNote(note.note)
+            if (pad != null) {
+              this.leds[pad + 48] = COLOR_NAMES.activeNote  
+            }            
+          })
+        }
+      }
+
     }
   }
   setNote (pos) {
@@ -335,6 +370,7 @@ export default class UI {
         const row = 1 - Math.floor((index - 48) / 8)
         const pos = index % 8
         const note = this.system.scaler.note(row, pos)
+        if (note == null) { return }
         if (!this.deleteMode) {
           this.sequencer.recordNoteOn(this.selectedChannel, note, velocity)
         }
@@ -387,6 +423,7 @@ export default class UI {
         const row = 1 - Math.floor((index - 48) / 8)
         const pos = index % 8
         const note = this.system.scaler.note(row, pos)
+        if (note == null) { return }
         console.log('NOTE OFF', note)
         this.sequencer.previewNoteOff(this.selectedChannel, note)
         this.sequencer.recordNoteOff(this.selectedChannel, note)
@@ -416,5 +453,17 @@ export default class UI {
         return DRUM_MODES[mode][this.selectedDrum]
       }
     }
+  }
+  selectedDrumForNote (note) {
+    const mode = this.system.channels[this.selectedChannel].sequencerMode
+    if (mode === 'drums') {
+      const pad = note - (this.system.scaler.currentOctave * 12)
+      if (pad < 0 || pad > 15) { return null }
+      const row = 1 - Math.floor(pad / 8)
+      const col = pad % 8
+      return row * 8 + col
+    } else {
+      return 0
+    }    
   }
 }
