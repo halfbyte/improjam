@@ -1,7 +1,7 @@
 // TODO: This should be a loadable config later on. (jk / 2018-10-09)
 export default [
   ['Reverb', 'Echo', null, null, null, 'Track Vol', 'Send REV', 'Send DEL'], //  1
-  ['Filter', 'FM', null, null, null, 'Track Vol', 'Send REV', 'Send DEL'],   //  2
+  ['Filter', 'FM', 'Flt Attack', null, null, 'Track Vol', 'Send REV', 'Send DEL'],   //  2
   ['Filter', 'Reso', null, null, null, 'Track Vol', 'Send REV', 'Send DEL'], //  3
   ['Filter', null, null, null, null, 'Track Vol', 'Send REV', 'Send DEL'],   //  4
   ['Filter', 'Reso', 'Wavetable', null, null, 'Track Vol', 'Send REV', 'Send DEL'], //  5
