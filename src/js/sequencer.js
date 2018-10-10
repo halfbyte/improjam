@@ -27,7 +27,7 @@ export default class Sequencer {
     this.realStep = 0
     this.oldRealStep = 0
     this.openNotes = []
-    this.syncOut = -1
+    this.syncOuts = []
     this.nextTime = performance.now()
     this.tick = 0
     this.scheduleNextNotes()
@@ -139,7 +139,7 @@ export default class Sequencer {
     // setTimeout(this.scheduleNextNotes, 10)
   }
   sendTick (time) {
-    this.syncOut && this.system.sendSync(this.syncOut, time)
+    this.syncOuts.forEach((so) => this.system.sendSync(so, time))
   }
   sendNote (track, time, note, velocity, length, repeat, perTick) {
     if (repeat == null || repeat <= 1) {

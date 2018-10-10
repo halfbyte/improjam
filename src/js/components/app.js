@@ -19,6 +19,23 @@ class Select {
     }
   }
 }
+class MultiSelect extends Select {
+  constructor (vnode) {
+    super(vnode)
+  }
+  view (vnode) {
+    return m('select', { multiple: true, size: 8, onchange: (event) => this.change(event) }, this.options.map((option) => {
+      const optname = option === -1 ? this.nullValue : option
+      return m('option', { value: option, selected: vnode.attrs.value.includes(option) }, optname)
+    }))
+  }
+  change (event) {
+    if (this.onchange) {
+      console.log(Array.from(event.target.selectedOptions))
+      this.onchange(Array.prototype.map.call(event.target.selectedOptions, (opt) => opt.value))
+    }
+  }
+}
 
 class ChannelSelector {
   constructor (vnode) {
@@ -81,11 +98,10 @@ export default class App {
   view () {
     var system = this.system
     return [
-      m('button', { onclick: () => this.system.save() }, 'Save'),
       m('div', [
         m('label', [
           'Sync:',
-          m(Select, { options: this.allOutputsPlusAny, nullValue: 'None', value: system.sequencer.syncOut, onchange (val) { system.sequencer.syncOut = val } })
+          m(MultiSelect, { options: this.allOutputsPlusAny, nullValue: 'None', value: system.sequencer.syncOuts, onchange (val) { system.sequencer.syncOuts = val } })
         ])
       ]),
       m('h2', 'Channels'),

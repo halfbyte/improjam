@@ -150,7 +150,7 @@ class MIDISystem extends Eventable {
       settings: {
         tempo: this.sequencer.tempo,
         swing: this.sequencer.swing,
-        syncOut: this.sequencer.syncOut,
+        syncOuts: this.sequencer.syncOuts,
         accent: this.matrixView.accent
       }
     }
@@ -197,7 +197,7 @@ class MIDISystem extends Eventable {
     const fs = require('fs')
     fs.writeFile(path, JSON.stringify(data, null, 2), (err) => {
       if (err) {
-        console.log('Error saving settings', err)
+        console.log('Error saving Song', err)
       } else {
         console.log('Song saved')
         localStorage.setItem('currentFile', path)
@@ -276,7 +276,7 @@ class MIDISystem extends Eventable {
           })
         }
         if (parsed.settings) {
-          this.sequencer.syncOut = parsed.settings.syncOut || -1
+          this.sequencer.syncOuts = parsed.settings.syncOuts || []
         }
       }
     })
