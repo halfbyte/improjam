@@ -26,21 +26,8 @@ export default class UI {
     this.system = system
     this.sequencer = sequencer
     this.leds = []
+    this.reset()
     for (var i = 0; i < 64; i++) { this.leds.push('off') }
-    this.selectedChannel = 0
-    this.selectedPattern = 0
-    this.selectedNote = null
-    this.editNote = null
-    this.noteOffset = 48
-    this.selectedDrum = 0
-    this.selectedPatterns = new Set()
-    this.selectMode = false
-    this.deleteMode = false
-    this.muteMode = false
-    this.controllerMode = false
-    this.copyMode = false
-    this.accent = false,
-    this.encoderCache = [0, 0, 0, 0, 0, 0, 0, 0]
     this.system.pushDriver.on('push:matrix:on', (led, velocity) => {
       this.ledClick(led, velocity)
       if (led < 16) {
@@ -465,5 +452,24 @@ export default class UI {
     } else {
       return 0
     }    
+  }
+
+  reset() {
+    this.selectedChannel = 0
+    this.selectedPattern = 0
+    this.selectedChannel = 0
+    this.selectedPattern = 0
+    this.selectedNote = null
+    this.editNote = null
+    this.noteOffset = 48
+    this.selectedDrum = 0
+    this.selectedPatterns = new Set()
+    this.selectMode = false
+    this.deleteMode = false
+    this.muteMode = false
+    this.controllerMode = false
+    this.copyMode = false
+    this.accent = false,
+    this.encoderCache = [0, 0, 0, 0, 0, 0, 0, 0]
   }
 }

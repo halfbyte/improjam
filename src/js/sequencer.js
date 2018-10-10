@@ -14,20 +14,9 @@ const PARAM_FACTORS = {
 
 export default class Sequencer {
   constructor (system, numChannels) {
-    let i
+    this.numChannels = numChannels
     this.system = system
-    this.tracks = []
-    for (i = 0; i < numChannels; i++) {
-      this.tracks[i] = {
-        // pattern to start at
-        firstPattern: 0,
-        // pattern to end with
-        length: 1,
-        // actual pattern data.
-        data: [],
-        mode: 'note'
-      }
-    }
+    this.clearTracks()
     this.tempo = 120
     this.swing = 0
     this.playing = false
@@ -43,6 +32,29 @@ export default class Sequencer {
     this.tick = 0
     this.scheduleNextNotes()
   }
+  clearTracks() {
+    var i;
+    this.tracks = []
+    for (i = 0; i < this.numChannels; i++) {
+      this.tracks[i] = {
+        // pattern to start at
+        firstPattern: 0,
+        // pattern to end with
+        length: 1,
+        // actual pattern data.
+        data: [],
+        mode: 'note'
+      }
+    }
+  }
+
+  reset() {
+    this.clearTracks()
+    this.tempo = 120
+    this.swing = 0
+    this.stop()    
+  }
+
   start () {
     this.playing = true
     this.tick = 0

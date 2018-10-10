@@ -29,9 +29,7 @@ export default class Scaler {
     this.SCALEMAPS = SCALEMAPS
     this.NOTES = NOTES
     this.OCTAVES = OCTAVES
-    this.currentScale = 'min'
-    this.currentRootNote = 'C'
-    this.currentOctave = 3
+    this.reset()
   }
   note (row, pos) {
     if (this.currentScale === 'chromatic') {
@@ -107,5 +105,10 @@ export default class Scaler {
       newIndex = 0
     }
     this.currentScale = SCALES[newIndex]
+  }
+  reset () {
+    this.currentScale = 'min'
+    this.currentRootNote = 'C'
+    this.currentOctave = 3
   }
 }

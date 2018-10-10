@@ -112,6 +112,13 @@ I also greatly enhanced the Live set, but there's so much left to do. The drums 
 
 There are a couple of high priority items left open on my technical backlog as well, but I have two long train rides left until the first live performance and three evenings with a good chance of some time to work on this.
 
+## In Transit (2018-10-10)
+
+I finally added a proper menu to the Electron app, allowing me to start to tie together a couple of things. I started with the "New" menu item which will reset most of the app and delete all sequences, except for the Channel settings. I think I will treat those separately from the actual file contents (more like a setting) and will autosave them or so.
+
+Next will be proper load and save dialogs.
+
+
 
 
 

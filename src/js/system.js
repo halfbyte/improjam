@@ -8,6 +8,8 @@ import Sequencer from './sequencer.js'
 import Scaler from './scaler.js'
 import UI from './ui.js'
 
+const {ipcRenderer} = require('electron')
+
 const NUM_CHANNELS = 8
 const m = require('mithril')
 
@@ -40,52 +42,6 @@ class MIDISystem extends Eventable {
     this.matrixView = this.ui
     this.soloChannel = null
 
-    this.sequencer.tracks[0].data[0] = [{
-      type: 'note',
-      note: 48,
-      length: 6, // four quarter notes
-      velocity: 100
-    }, {
-      type: 'note',
-      note: 60 + 3,
-      length: 24, // four quarter notes
-      velocity: 100
-    }, {
-      type: 'note',
-      note: 48 + 7,
-      length: 24, // four quarter notes
-      velocity: 100
-    }]
-    this.sequencer.tracks[0].data[96] = [{
-      type: 'note',
-      note: 48,
-      length: 24, // four quarter notes
-      velocity: 100
-    }]
-    this.sequencer.tracks[0].data[192] = [{
-      type: 'note',
-      note: 48,
-      length: 24, // four quarter notes
-      velocity: 100
-    }]
-    this.sequencer.tracks[0].data[288] = [{
-      type: 'note',
-      note: 48,
-      length: 24, // four quarter notes
-      velocity: 100
-    }]
-    this.sequencer.tracks[0].data[288 + 48] = [{
-      type: 'note',
-      note: 48,
-      length: 24, // four quarter notes
-      velocity: 100
-    }]
-    this.sequencer.tracks[0].data[288 + 96] = [{
-      type: 'note',
-      note: 48,
-      length: 24, // four quarter notes
-      velocity: 100
-    }]
     this.load()
     this.initPushState()
   }
@@ -100,10 +56,29 @@ class MIDISystem extends Eventable {
       this.channels[i] = new Channel({}, this)
     }
   }
+  
+  clearAll() {
+    if (this.sequencer) { this.sequencer.reset() }
+    if (this.ui) { this.ui.reset() }
+    if (this.scaler) { this.scaler.reset() }
+  }
+
   setupListeners () {
     this.onMIDIMessage = this.onMIDIMessage.bind(this)
     Object.keys(this.inputs).forEach((key) => {
       this.setupDeviceListener(this.inputs[key])
+    })
+    ipcRenderer.on('menu', (event, arg) => {
+      if (arg === 'new') {
+        if (confirm('Really Clear All?')) {
+          this.clearAll()  
+          m.redraw()
+        }        
+      } else if (arg === 'open') {
+        this.load()
+      } else if (arg === 'save') {
+        this.save()
+      }
     })
   }
   setupDeviceListener (device) {

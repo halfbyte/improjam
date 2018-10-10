@@ -1,8 +1,10 @@
 // Hello
+const menu = require('./src/js/electron/menu')
+
 
 // Modules to control application life and create native browser window
 const path = require('path')
-const { app, BrowserWindow, protocol } = require('electron')
+const { app, BrowserWindow, protocol, Menu } = require('electron')
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 
@@ -14,7 +16,7 @@ const base = app.getAppPath()
 const scheme = 'app'
 // Create the protocol
 const srcPath = path.join(base, 'src')
-require('./src/create-protocol')(scheme, srcPath)
+require('./src/js/electron/create-protocol')(scheme, srcPath)
 
 // const protocolServeName = protocolServe({cwd: srcPath, app, protocol});
 
@@ -38,6 +40,8 @@ function createWindow () {
     // when you should delete the corresponding element.
     mainWindow = null
   })
+
+  Menu.setApplicationMenu(menu(mainWindow))
 }
 
 // This method will be called when Electron has finished
