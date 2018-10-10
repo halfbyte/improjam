@@ -8,6 +8,10 @@ import Sequencer from './sequencer.js'
 import Scaler from './scaler.js'
 import UI from './ui.js'
 
+const FILE_FILTER = [
+  {name: 'Improjam File', extensions: ['improjam']}
+]
+
 const {ipcRenderer} = require('electron')
 
 const NUM_CHANNELS = 8
@@ -42,7 +46,8 @@ class MIDISystem extends Eventable {
     this.matrixView = this.ui
     this.soloChannel = null
 
-    this.load()
+    this.loadSettings()
+    this.loadLastSong()
     this.initPushState()
   }
   initPushState () {
@@ -61,6 +66,8 @@ class MIDISystem extends Eventable {
     if (this.sequencer) { this.sequencer.reset() }
     if (this.ui) { this.ui.reset() }
     if (this.scaler) { this.scaler.reset() }
+    localStorage.removeItem('currentFile')
+    this.adjustSaveAsMenu()
   }
 
   setupListeners () {
@@ -75,9 +82,13 @@ class MIDISystem extends Eventable {
           m.redraw()
         }        
       } else if (arg === 'open') {
-        this.load()
+        this.loadAs()
       } else if (arg === 'save') {
         this.save()
+      } else if (arg === 'save-as') {
+        this.saveAs()
+      } else if (arg === 'save-settings') {
+        this.saveSettings()
       }
     })
   }
@@ -125,7 +136,7 @@ class MIDISystem extends Eventable {
     this.outputs[this.sequencer.syncOut].send([0xFC], time)
   }
   // TODO: Implement a real save.
-  save () {
+  saveSettings () {
     const { app } = require('electron').remote
     const path = require('path')
     const userDataPath = app.getPath('userData')
@@ -152,15 +163,75 @@ class MIDISystem extends Eventable {
       }
     })
   }
-  load () {
-    const { app } = require('electron').remote
-    const path = require('path')
-    const userDataPath = app.getPath('userData')
-    const fs = require('fs')
-    const fullPath = path.join(userDataPath, 'settings.json')
-    console.log('Loading from: ', fullPath)
+  save () {
+    if (localStorage.getItem('currentFile') != null) {
+      this.saveSong(localStorage.getItem('currentFile'))
+    } else {
+      this.saveAs()      
+    }
+  }
 
-    fs.readFile(fullPath, 'utf8', (err, data) => {
+  saveAs () {
+    const { dialog } = require('electron').remote
+    const path = dialog.showSaveDialog({filters: FILE_FILTER, properties: ['openFile'], title: 'Save Improjam Song'})
+    if (path) {
+      this.saveSong(path)
+    }
+
+  }
+
+  // TODO: Implement a real save.
+  saveSong (path) {
+    console.log("SAVING TO", path)
+    // gather data
+    const data = {
+      patterns: this.sequencer.tracks,
+      scaler: this.scaler.getConfig(),
+      settings: {
+        tempo: this.sequencer.tempo,
+        swing: this.sequencer.swing,
+        accent: this.matrixView.accent
+      }
+    }
+    // write config
+    const fs = require('fs')
+    fs.writeFile(path, JSON.stringify(data, null, 2), (err) => {
+      if (err) {
+        console.log('Error saving settings', err)
+      } else {
+        console.log('Song saved')
+        localStorage.setItem('currentFile', path)
+        this.adjustSaveAsMenu()    
+      }
+    })
+  }
+
+  adjustSaveAsMenu() {
+    const { Menu } = require('electron').remote
+    const menu = Menu.getApplicationMenu()
+    const saveAs = menu.getMenuItemById('save-as')
+    saveAs.enabled = localStorage.getItem('currentFile') != null
+  }
+
+  loadLastSong() {
+    if (localStorage.getItem('currentFile') != null) {
+      this.loadSong(localStorage.getItem('currentFile'))
+      this.adjustSaveAsMenu()
+    }
+  }
+
+  loadAs() {
+    const { dialog } = require('electron').remote
+    const paths = dialog.showOpenDialog({filters: FILE_FILTER, properties: ['openFile'], title: 'Open Improjam Song'})
+    if (paths) {
+      this.loadSong(paths[0])
+    }
+  }
+  
+  loadSong(path) {
+    console.log("Loading Song from", path)
+    const fs = require('fs')
+    fs.readFile(path, 'utf8', (err, data) => {
       if (err) {
         console.log("Couldn't load settings", err)
       } else {
@@ -181,6 +252,31 @@ class MIDISystem extends Eventable {
           this.sequencer.swing = parsed.settings.swing || 0
           this.sequencer.syncOut = parsed.settings.syncOut || -1
           this.matrixView.accent = !!parsed.settings.accent
+        }
+      }
+    })      
+  }
+
+  loadSettings () {
+    const { app } = require('electron').remote
+    const path = require('path')
+    const userDataPath = app.getPath('userData')
+    const fs = require('fs')
+    const fullPath = path.join(userDataPath, 'settings.json')
+    console.log('Loading settings from: ', fullPath)
+
+    fs.readFile(fullPath, 'utf8', (err, data) => {
+      if (err) {
+        console.log("Couldn't load settings", err)
+      } else {
+        const parsed = JSON.parse(data)
+        if (parsed.channels) {
+          parsed.channels.forEach((config, index) => {
+            this.channels[index].setConfig(config)
+          })
+        }
+        if (parsed.settings) {
+          this.sequencer.syncOut = parsed.settings.syncOut || -1
         }
       }
     })

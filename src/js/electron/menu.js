@@ -8,7 +8,8 @@ function makeMenu(win) {
         { label: 'New', accelerator: 'CommandOrControl+N', click: () => win.webContents.send('menu', 'new') },
         { label: 'Open...', accelerator: 'CommandOrControl+O', click: () => win.webContents.send('menu', 'open') },
         { label: 'Save', accelerator: 'CommandOrControl+S', click: () => win.webContents.send('menu', 'save'), id: 'save' },
-        { label: 'Save As...', accelerator: 'CommandOrControl+Shitf-S', click: () => win.webContents.send('menu', 'save-as'), id: 'save-as', enabled: false }
+        { label: 'Save As...', accelerator: 'CmdOrCtrl+Shift+S', click: () => win.webContents.send('menu', 'save-as'), id: 'save-as', enabled: false },
+        { label: 'Save Settings', click: () => win.webContents.send('menu', 'save-settings') }
       ]
     },
     {
