@@ -10,7 +10,7 @@ class Select {
   view (vnode) {
     return m('select', { onchange: (event) => this.change(event) }, this.options.map((option) => {
       const optname = option === -1 ? this.nullValue : option
-      return m('option', { value: option, selected: option === vnode.attrs.value }, optname)
+      return m('option', { value: option, selected: vnode.attrs.value && option.toString(10) === vnode.attrs.value.toString(10) }, optname)
     }))
   }
   change (event) {
@@ -107,7 +107,7 @@ export default class App {
       m('h2', 'Channels'),
       m('div', this.system.channels.map((channel, i) => {
         return m('div', [
-          m('a', { href: '#', class: 'channel-name', onclick: () => { this.system.matrixView.selectedChannel = i; this.system.pushDriver.setChannel(i) } }, `${i.toString(16).toUpperCase()}`),
+          m('button', { class: 'channel-name', onclick: (e) => { this.system.ui.selectChannel(i);e.preventDefault(); } }, `${i.toString(16).toUpperCase()}`),
           m(Select, { options: this.allOutputsPlusAny, value: channel.inputDevice, onchange (val) { channel.inputDevice = val } }),
           m(ChannelSelector, { showAny: true, value: channel.inputChannel, onchange (val) { channel.inputChannel = val } }),
           ' > ',
