@@ -96,6 +96,8 @@ export default class App {
     this.allOutputsPlusAny = [-1].concat(this.allOutputs)
   }
   view () {
+    this.system.ui.refreshLeds()
+
     var system = this.system
     return [
       m('div', [

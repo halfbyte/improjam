@@ -116,7 +116,17 @@ There are a couple of high priority items left open on my technical backlog as w
 
 I finally added a proper menu to the Electron app, allowing me to start to tie together a couple of things. I started with the "New" menu item which will reset most of the app and delete all sequences, except for the Channel settings. I think I will treat those separately from the actual file contents (more like a setting) and will autosave them or so.
 
-Next will be proper load and save dialogs.
+Later today I've also implemented Load and Save Dialogs that save and load "songs"
+
+Last change was to allow me to send clock sync to more than one output. This will hopefully enable syncing with Sam's stuff.
+
+## Another train ride (2018-10-11)
+
+I wanted to store a couple of settings per channel instead of system wide, mostly the currently selected pattern (a real continuity issue) and the octave. So I did that.
+
+I also finally got rid of a really annoying issue where I would call the function to refresh the matrix display for each matrix button, resulting in way to many refreshes.
+
+
 
 
 

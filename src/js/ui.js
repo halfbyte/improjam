@@ -214,6 +214,8 @@ export default class UI {
     } else {
       this.refreshForDrumsSequencer(this.system.channels[this.selectedChannel].sequencerMode)
     }
+    this.system.pushDriver.setMatrix(this.leds)
+
     this.system.pushDriver.setAccent(this.accent)
     this.system.pushDriver.setPlaying(this.sequencer.playing)
     this.system.pushDriver.setRecording(this.sequencer.recording)
@@ -338,8 +340,6 @@ export default class UI {
     this.leds[pos] = color
   }
   ledState (index) {
-    this.refreshLeds()
-    this.system.pushDriver.setMatrix(this.leds)
     return this.leds[index]
   }
 

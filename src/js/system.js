@@ -121,9 +121,7 @@ class MIDISystem extends Eventable {
     }
   }
   sendSync (output, time) {
-    if (!this.sequencer) { return }
-    if (this.sequencer.syncOut === '-1' || this.sequencer.syncOut === -1) { return }
-    this.outputs[this.sequencer.syncOut].send([0xF8], time)
+    this.outputs[output].send([0xF8], time)
   }
   sendStart (output, time) {
     if (!this.sequencer) { return }
