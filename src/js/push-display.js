@@ -5,6 +5,8 @@ const { initPush, sendFrame } = require('ableton-push-canvas-display')
 const STANDARD_FONT = "16px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
 const MODE_FONT = "italic 48px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
 const STEP_FONT = "48px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+const REPEATS = ["1/4", "1/4t", "1/8", "1/8t", "1/16", "1/16t", "1/32", "1/32t"]
+
 export default class PushDisplay {
   constructor (system) {
     console.log('WH')
@@ -164,6 +166,11 @@ export default class PushDisplay {
       ctx.textAlign = 'left'
       ctx.fillStyle = "#fff"
       ctx.fillText("select", 480, 100)
+    } else if (this.system.ui.repeat && this.system.ui.repeat) {
+      ctx.font = MODE_FONT
+      ctx.textAlign = 'left'
+      ctx.fillStyle = "#fff"
+      ctx.fillText("repeat: " + REPEATS[this.system.ui.repeat], 480, 100)
     } else if (this.system.sequencer && this.system.sequencer.recording) {
       ctx.font = MODE_FONT
       ctx.textAlign = 'left'

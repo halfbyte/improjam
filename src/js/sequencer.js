@@ -12,6 +12,8 @@ const PARAM_FACTORS = {
   repeat: 1,
 }
 
+const STEPS_TO_SCHEDULE = 48
+
 export default class Sequencer {
   constructor (system, numChannels) {
     this.numChannels = numChannels
@@ -27,6 +29,7 @@ export default class Sequencer {
     this.realStep = 0
     this.oldRealStep = 0
     this.openNotes = []
+    this.openRepeatNotes = []
     this.syncOuts = []
     this.nextTime = performance.now()
     this.tick = 0
@@ -105,17 +108,25 @@ export default class Sequencer {
     }
 
     if (currentTime > this.nextTime - (perTick * 4)) {
-      for (i = 0; i < 48; i++) {
+      for (i = 0; i < STEPS_TO_SCHEDULE; i++) {
         if (i % 4 === 0) {
           this.sendTick(this.nextTime + (perTick * (i)))
         }
-
+        var swingOff = 0
+        if ((this.tick + i) % 48 === 24) {
+          swingOff = this.swing / 2.0
+        }
+        const time = this.nextTime + (perTick * (i + swingOff))
+        if (this.repeat != null && (this.tick + i) % this.repeat.repeat === 0) {
+          this.openRepeatNotes.forEach((noteConfig) => {
+            const [channel, note, velocity] = noteConfig
+            if (track === this.repeat.channel) {
+              this.sendNote(channel, time, note, velocity, this.repeat.repeat, null, perTick)
+            }
+          })
+        }
+  
         if (this.playing) {
-          var swingOff = 0
-          if ((this.tick + i) % 48 === 24) {
-            swingOff = this.swing / 2.0
-          }
-          const time = this.nextTime + (perTick * (i + swingOff))
           for (t = 0; t < numTracks; t++) {
             const track = this.tracks[t]
             const trackOffset = track.firstPattern * (16 * 24)
@@ -132,7 +143,7 @@ export default class Sequencer {
         }
       }
       this.tick += i
-      this.nextTime += (perTick * 48)
+      this.nextTime += (perTick * i)
       if (this.tick >= (256 * 24)) { this.tick = 0 }
     }
     this.tickWorker.postMessage('request-tick')
@@ -221,12 +232,16 @@ export default class Sequencer {
       track,
       [144, note, velocity]
     )
+    this.openRepeatNotes.push([track, note, velocity])
   }
   previewNoteOff (track, note) {
     this.system.sendChannelMessage(
       track,
       [128, note, 0]
     )
+    this.openRepeatNotes = this.openRepeatNotes.filter((n) => {
+      return n[1] !== track || n[2] !== note
+    })
   }
   recordNoteOn (track, note, velocity) {
     if (!this.recording || !this.playing) { return }
@@ -355,5 +370,11 @@ export default class Sequencer {
     }
     this.swing = newSwing
     m.redraw()
+  }
+  setRepeat(channel, repeat) {
+    this.repeat = {channel: channel, repeat: repeat}
+  }
+  clearRepeat() {
+    this.repeat = null
   }
 }

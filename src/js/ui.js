@@ -2,6 +2,7 @@ import { maxInSet, minInSet} from './in-set.js'
 const m = require('mithril')
 
 const ENCODER_FACTOR = 4
+const REPEAT_MODE = [24*4, 18*4, 12*4, 9*4, 6*4, 18, 12, 9]
 
 const COLOR_NAMES = {
   pattern: 'red',
@@ -147,6 +148,14 @@ export default class UI {
         this.copyMode = false
       }
     })
+    this.system.pushDriver.on('push:repeat:on', (repeat) => {
+      this.sequencer.setRepeat(this.selectChannel, REPEAT_MODE[repeat])
+      this.repeat = repeat
+    })      
+    this.system.pushDriver.on('push:repeat:off', (repeat) => {
+      this.sequencer.clearRepeat()
+      this.repeat = null
+    })      
     this.system.pushDriver.on('push:encoder', (encoder, increment) => {      
       if (this.editNote != null) {
 
@@ -391,8 +400,8 @@ export default class UI {
         if (this.deleteMode) {
           this.sequencer.deleteNote(this.selectedChannel, this.selectedPattern[this.selectedChannel], this.noteForSelectedDrum())
         } else if (!this.selectMode) {
-          this.sequencer.previewNote(this.selectedChannel, this.noteForSelectedDrum(), velocity)
-          this.sequencer.recordNoteOn(this.selectedChannel, this.noteForSelectedDrum(), velocity)
+          this.sequencer.previewNote(this.selectedChannel, this.noteForSelectedDrum(slot), velocity)
+          this.sequencer.recordNoteOn(this.selectedChannel, this.noteForSelectedDrum(slot), velocity)
         }
       }
     }
@@ -415,9 +424,11 @@ export default class UI {
         this.sequencer.recordNoteOff(this.selectedChannel, note)
       }
     } else {
-      this.sequencer.previewNoteOff(this.selectedChannel, this.noteForSelectedDrum())
-      this.sequencer.recordNoteOff(this.selectedChannel, this.noteForSelectedDrum())
-      console.log("DELAY", performance.now() - this.noteEditDelay)
+      if (index >= 48) {
+        const slot = index - 48
+        this.sequencer.previewNoteOff(this.selectedChannel, this.noteForSelectedDrum(slot))
+        this.sequencer.recordNoteOff(this.selectedChannel, this.noteForSelectedDrum(slot))
+      }
       if (performance.now() - this.noteEditDelay < 300) {
         const time = 24 * (index - 16 + (this.selectedPattern[this.selectedChannel] * 16))
         const note = this.noteForSelectedDrum()
@@ -427,16 +438,19 @@ export default class UI {
     }
     m.redraw()
   }
-  noteForSelectedDrum () {
+  noteForSelectedDrum (drum=null) {
+    if (drum == null) {
+      drum = this.selectedDrum
+    }
     const mode = this.system.channels[this.selectedChannel].sequencerMode
     if (mode === 'drums') {
-      const row = Math.floor(this.selectedDrum / 8)
-      const col = this.selectedDrum % 8
+      const row = Math.floor(drum / 8)
+      const col = this.drum % 8
       const pad = (1 - row) * 8 + col
       return pad + this.system.scaler.currentOctave * 12
     } else {
-      if (DRUM_MODES[mode] && this.selectedDrum < DRUM_MODES[mode].length) {
-        return DRUM_MODES[mode][this.selectedDrum]
+      if (DRUM_MODES[mode] && drum < DRUM_MODES[mode].length) {
+        return DRUM_MODES[mode][drum]
       }
     }
   }
@@ -478,5 +492,6 @@ export default class UI {
     this.copyMode = false
     this.accent = false,
     this.encoderCache = [0, 0, 0, 0, 0, 0, 0, 0]
+    this.repeat = null
   }
 }

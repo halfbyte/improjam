@@ -182,6 +182,10 @@ export default class PushDriver extends Eventable {
       } else if (cc >= 71 && cc <= 78) {
         const signed = val < 64 ? val : val - 128
         this.trigger('push:encoder', cc - 71, signed)
+      } else if (cc >= 36 && cc <= 43 && val > 0) {        
+        this.trigger('push:repeat:on', cc - 36)
+      } else if (cc >= 36 && cc <= 43 && val === 0) {        
+        this.trigger('push:repeat:off', cc - 36)
       } else if (cc === 59 && val > 0) {
         this.trigger('push:function:on', 'user')
       } else if (cc === 60 && val > 0) {
@@ -311,7 +315,7 @@ export default class PushDriver extends Eventable {
       this.sendSingleFunctionEntry(cc, [0, 0])
     })
     const leds = []
-    const WHITE_BUTTONS = [55, 54, 59, 48, 118, 58, 88]
+    const WHITE_BUTTONS = [55, 54, 59, 48, 118, 58, 88, 36, 37, 38, 39, 40, 41, 42, 43]
     WHITE_BUTTONS.forEach((cc) => {
       leds.push([cc, [0, COLORS.white]])
     })

@@ -126,6 +126,9 @@ I wanted to store a couple of settings per channel instead of system wide, mostl
 
 I also finally got rid of a really annoying issue where I would call the function to refresh the matrix display for each matrix button, resulting in way to many refreshes.
 
+## The day before (2018-10-12)
+
+While waiting for the sound system at the Ruhr.js location to be set up, I've implemented a first version of beat repeat, but I had to rebuild a couple of parts later on to make it work properly.
 
 
 
