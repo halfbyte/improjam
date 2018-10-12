@@ -58,11 +58,11 @@ export default class Sequencer {
   start () {
     this.playing = true
     this.tick = 0
-    this.system.sendStart(this.syncOut, this.nextTime - 10)
+    this.syncOuts.forEach((so) => this.system.sendStart(so, this.nextTime - 10))
   }
   stop () {
     this.playing = false
-    this.system.sendStop(this.syncOut, this.nextTime)
+    this.syncOuts.forEach((so) => this.system.sendStop(so, this.nextTime)) 
   }
   playPause () {
     if (this.playing) {

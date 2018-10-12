@@ -124,14 +124,10 @@ class MIDISystem extends Eventable {
     this.outputs[output].send([0xF8], time)
   }
   sendStart (output, time) {
-    if (!this.sequencer) { return }
-    if (this.sequencer.syncOut === '-1' || this.sequencer.syncOut === -1) { return }
-    this.outputs[this.sequencer.syncOut].send([0xFA], time)
+    this.outputs[output].send([0xFA], time)
   }
   sendStop (output, time) {
-    if (!this.sequencer) { return }
-    if (this.sequencer.syncOut === '-1' || this.sequencer.syncOut === -1) { return }
-    this.outputs[this.sequencer.syncOut].send([0xFC], time)
+    this.outputs[output].send([0xFC], time)
   }
   // TODO: Implement a real save.
   saveSettings () {
