@@ -149,7 +149,7 @@ export default class UI {
       }
     })
     this.system.pushDriver.on('push:repeat:on', (repeat) => {
-      this.sequencer.setRepeat(this.selectChannel, REPEAT_MODE[repeat])
+      this.sequencer.setRepeat(this.selectedChannel, REPEAT_MODE[repeat])
       this.repeat = repeat
     })      
     this.system.pushDriver.on('push:repeat:off', (repeat) => {
@@ -377,7 +377,6 @@ export default class UI {
             this.sequencer.previewNote(this.selectedChannel, note, velocity)
           }
         } else {
-          console.log('NOTE ON', note)
           this.sequencer.previewNote(this.selectedChannel, note, velocity)
         }
       }
@@ -419,7 +418,6 @@ export default class UI {
         const pos = index % 8
         const note = this.system.scaler.note(row, pos)
         if (note == null) { return }
-        console.log('NOTE OFF', note)
         this.sequencer.previewNoteOff(this.selectedChannel, note)
         this.sequencer.recordNoteOff(this.selectedChannel, note)
       }
@@ -445,9 +443,10 @@ export default class UI {
     const mode = this.system.channels[this.selectedChannel].sequencerMode
     if (mode === 'drums') {
       const row = Math.floor(drum / 8)
-      const col = this.drum % 8
+      const col = drum % 8
       const pad = (1 - row) * 8 + col
       return pad + this.system.scaler.currentOctave * 12
+      
     } else {
       if (DRUM_MODES[mode] && drum < DRUM_MODES[mode].length) {
         return DRUM_MODES[mode][drum]
@@ -472,7 +471,6 @@ export default class UI {
     this.selectedOctave[this.selectedChannel] = this.system.scaler.currentOctave
     this.selectedChannel = ch
     this.system.scaler.currentOctave = this.selectedOctave[this.selectedChannel]
-    console.log("switch", this.system.scaler.currentOctave)
     this.system.pushDriver.setChannel(ch)
   }
 

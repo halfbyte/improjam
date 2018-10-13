@@ -120,7 +120,7 @@ export default class Sequencer {
         if (this.repeat != null && (this.tick + i) % this.repeat.repeat === 0) {
           this.openRepeatNotes.forEach((noteConfig) => {
             const [channel, note, velocity] = noteConfig
-            if (track === this.repeat.channel) {
+            if (channel === this.repeat.channel) {
               this.sendNote(channel, time, note, velocity, this.repeat.repeat, null, perTick)
             }
           })
@@ -235,13 +235,15 @@ export default class Sequencer {
     this.openRepeatNotes.push([track, note, velocity])
   }
   previewNoteOff (track, note) {
+    //console.log('POFF', track, note)
     this.system.sendChannelMessage(
       track,
       [128, note, 0]
     )
     this.openRepeatNotes = this.openRepeatNotes.filter((n) => {
-      return n[1] !== track || n[2] !== note
+      return n[0] !== track || n[1] !== note
     })
+
   }
   recordNoteOn (track, note, velocity) {
     if (!this.recording || !this.playing) { return }
@@ -372,6 +374,7 @@ export default class Sequencer {
     m.redraw()
   }
   setRepeat(channel, repeat) {
+    console.log(channel, repeat)
     this.repeat = {channel: channel, repeat: repeat}
   }
   clearRepeat() {

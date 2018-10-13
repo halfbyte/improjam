@@ -166,7 +166,7 @@ export default class PushDisplay {
       ctx.textAlign = 'left'
       ctx.fillStyle = "#fff"
       ctx.fillText("select", 480, 100)
-    } else if (this.system.ui.repeat && this.system.ui.repeat) {
+    } else if (this.system.ui && this.system.ui.repeat) {
       ctx.font = MODE_FONT
       ctx.textAlign = 'left'
       ctx.fillStyle = "#fff"
