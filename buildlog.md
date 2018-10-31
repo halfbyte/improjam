@@ -135,8 +135,11 @@ While waiting for the sound system at the Ruhr.js location to be set up, I've im
 Did some initial design work for the web view to not look like 1992. Implemented a couple of features from the backlog (see [Github Issues](https://github.com/halfbyte/improjam/issues) for more details):
 
 - Replace the Settings/Song system with a template system that allows me to load templates (basically: Settings for a specific setup) while also saving all information including the settigs with the song.
-
 - Allow to quickly shift the octave of a note (or multiple notes if on the same step) by holding the note and using the octave-up/down buttons.
+- Decreased the amount of prescheduling to make the repeat function a bit more reliable. Also made repeat react to the channel pressure from push.
+- Implemented PitchBend pass through
+
+
 
 
 

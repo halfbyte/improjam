@@ -1,7 +1,7 @@
+/* eslint-env browser */
 import { maxInSet, minInSet } from './in-set.js'
 const m = require('mithril')
 
-const ENCODER_FACTOR = 4
 const REPEAT_MODE = [24 * 4, 18 * 4, 12 * 4, 9 * 4, 6 * 4, 18, 12, 9]
 
 const COLOR_NAMES = {
@@ -163,6 +163,12 @@ export default class UI {
     this.system.pushDriver.on('push:repeat:off', (repeat) => {
       this.sequencer.clearRepeat()
       this.repeat = null
+    })
+    this.system.pushDriver.on('push:pressure', (velocity) => {
+      this.sequencer.setRepeatPressure(velocity)
+    })
+    this.system.pushDriver.on('push:pitchbend', (data) => {
+      this.sequencer.sendPitchBend(this.selectedChannel, data)
     })
     this.system.pushDriver.on('push:encoder', (encoder, increment) => {
       if (this.editNote != null) {
@@ -387,7 +393,6 @@ export default class UI {
       }
     } else {
       if (index >= 16 && index < 48) {
-        const time = 24 * (index - 16 + (this.selectedPattern[this.selectedChannel] * 16))
         const note = this.noteForSelectedDrum()
         if (note != null) {
           if (this.deleteMode) {
@@ -460,7 +465,7 @@ export default class UI {
     const mode = this.system.channels[this.selectedChannel].sequencerMode
     if (mode === 'drums') {
       const pad = note - (this.system.scaler.currentOctave * 12)
-      if (pad < 0 || pad > 15) { return null }
+      if (pad < 0 || pad > 15) { return null }
       const row = 1 - Math.floor(pad / 8)
       const col = pad % 8
       return row * 8 + col
@@ -491,7 +496,7 @@ export default class UI {
     this.muteMode = false
     this.controllerMode = false
     this.copyMode = false
-    this.accent = false,
+    this.accent = false
     this.encoderCache = [0, 0, 0, 0, 0, 0, 0, 0]
     this.repeat = null
   }

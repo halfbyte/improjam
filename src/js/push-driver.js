@@ -197,6 +197,13 @@ export default class PushDriver extends Eventable {
       } else if (cc >= 20 && cc <= 27 && val > 0) {
         this.trigger('push:mute-solo', cc - 20)
       }
+    } else if (command === 0xd0) {
+      const velocity = event.data[1]
+      this.trigger('push:pressure', velocity)
+    } else if (command === 0xe0) {
+      this.trigger('push:pitchbend', [event.data[1], event.data[2]])
+    } else {
+      console.log('unknown cmd', command, event.data)
     }
   }
   setupFunctionLeds () {

@@ -12,7 +12,9 @@ const PARAM_FACTORS = {
   repeat: 1
 }
 
-const STEPS_TO_SCHEDULE = 48
+const SWING_LIMIT = 36
+
+const STEPS_TO_SCHEDULE = 24
 
 export default class Sequencer {
   constructor (system, numChannels) {
@@ -116,12 +118,15 @@ export default class Sequencer {
         if ((this.tick + i) % 48 === 24) {
           swingOff = this.swing / 2.0
         }
+        const straightTime = this.nextTime + (perTick * i)
         const time = this.nextTime + (perTick * (i + swingOff))
         if (this.repeat != null && (this.tick + i) % this.repeat.repeat === 0) {
           this.openRepeatNotes.forEach((noteConfig) => {
             const [channel, note, velocity] = noteConfig
             if (channel === this.repeat.channel) {
-              this.sendNote(channel, time, note, velocity, this.repeat.repeat, null, perTick)
+              // make sure only 16th notes swing on repeat
+              const myTime = this.repeat.repeat === 24 ? time : straightTime
+              this.sendNote(channel, myTime, note, velocity, this.repeat.repeat, null, perTick)
             }
           })
         }
@@ -180,6 +185,13 @@ export default class Sequencer {
         )
       }
     }
+  }
+  sendPitchBend (track, data) {
+    this.system.sendChannelMessage(
+      track,
+      [0xe0, data[0], data[1]],
+      0
+    )
   }
   toggleNote (track, time, note, velocity = 100, length = 24) {
     if (this.recording) { return }
@@ -324,7 +336,7 @@ export default class Sequencer {
         })
         this.tracks[channel].data[time] = newNotes
       } else {
-        const oldParam = (notes[0][param] || PARAM_LIMITS[param][0]) / PARAM_FACTORS[param]
+        const oldParam = (notes[0][param] || PARAM_LIMITS[param][0]) / PARAM_FACTORS[param]
         const newParam = this.clampParamToLimits(oldParam + increment, param)
         const newNotes = notes.map((note) => {
           note[param] = newParam * PARAM_FACTORS[param]
@@ -376,11 +388,11 @@ export default class Sequencer {
   }
   changeSwing (inc) {
     var newSwing = this.swing + inc
-    if (newSwing > 48) {
-      newSwing = 48
+    if (newSwing > SWING_LIMIT) {
+      newSwing = SWING_LIMIT
     }
-    if (newSwing < -48) {
-      newSwing = -48
+    if (newSwing < -SWING_LIMIT) {
+      newSwing = -SWING_LIMIT
     }
     this.swing = newSwing
     m.redraw()
@@ -390,5 +402,11 @@ export default class Sequencer {
   }
   clearRepeat () {
     this.repeat = null
+  }
+  setRepeatPressure (pressure) {
+    this.openRepeatNotes = this.openRepeatNotes.map((note) => {
+      note[2] = pressure
+      return note
+    })
   }
 }
