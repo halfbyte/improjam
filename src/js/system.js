@@ -49,6 +49,7 @@ class MIDISystem extends Eventable {
     this.loadLastSong()
     this.initPushState()
     this.settingsOpen = false
+    this.currentTemplate = 'settings'
   }
   initPushState () {
     this.pushDriver.setChannel(this.matrixView.selectedChannel)
@@ -135,7 +136,7 @@ class MIDISystem extends Eventable {
   // TODO: Implement a real save.
 
   startSaveTemplate () {
-    dialogs.prompt('Save Template', 'settings', this.saveTemplate.bind(this))
+    dialogs.prompt('Save Template', this.currentTemplate, this.saveTemplate.bind(this))
   }
 
   saveTemplate (templateName) {
@@ -268,6 +269,7 @@ class MIDISystem extends Eventable {
           this.sequencer.syncOut = parsed.settings.syncOut || -1
           this.matrixView.accent = !!parsed.settings.accent
         }
+        m.redraw()
       }
     })
   }
@@ -310,6 +312,7 @@ class MIDISystem extends Eventable {
         if (parsed.settings) {
           this.sequencer.syncOuts = parsed.settings.syncOuts || []
         }
+        this.currentTemplate = templateName
       }
     })
   }

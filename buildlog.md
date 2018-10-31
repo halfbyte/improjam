@@ -66,7 +66,7 @@ I found myself with a mostly free weekend and took the chance to push this forwa
 - Mute and Solo tracks
 - Realtime Recording (this seems to work ok for now, might be a bit imprecise)
 
-## Controllers Pt.1 (2018-10-03) 
+## Controllers Pt.1 (2018-10-03)
 
 Today I started to flesh out an Ableton Live set that will be the backbone of my first improjam live performance. On the way, I quickly found out that I definitely need a way to control synth params - The downside of the software only setup I'm striving for right now (mostly for convenient travelling) is that there are no additional knobs to play with on extra hardware - during jsconf.eu I had tons of hardware with me and I twiddled them knobs all the time.
 
@@ -98,7 +98,7 @@ I also built a pattern copy which even works across tracks. And to give a bit of
 
 Last but not least, I hacked in a simple way of showing controller names below the controller knobs. This should be configurable (Maybe even via the App UI) but for now it's just a module containing a 2d array.
 
-Also, I finally cleaned up the repo, renamed a couple of files, deleted everything that wasn't needed and extracted all classes from `system.js` to single modules. 
+Also, I finally cleaned up the repo, renamed a couple of files, deleted everything that wasn't needed and extracted all classes from `system.js` to single modules.
 
 ## Chromatic Keyboard, Active Note Display, Step bars (2018-10-09)
 
@@ -129,6 +129,16 @@ I also finally got rid of a really annoying issue where I would call the functio
 ## The day before (2018-10-12)
 
 While waiting for the sound system at the Ruhr.js location to be set up, I've implemented a first version of beat repeat, but I had to rebuild a couple of parts later on to make it work properly.
+
+## Finally back at it (2018-10-31)
+
+Did some initial design work for the web view to not look like 1992. Implemented a couple of features from the backlog (see [Github Issues](https://github.com/halfbyte/improjam/issues) for more details):
+
+- Replace the Settings/Song system with a template system that allows me to load templates (basically: Settings for a specific setup) while also saving all information including the settigs with the song.
+
+- Allow to quickly shift the octave of a note (or multiple notes if on the same step) by holding the note and using the octave-up/down buttons.
+
+
 
 
 

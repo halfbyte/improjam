@@ -107,12 +107,12 @@ class Settings {
           m('h3', 'Sync'),
           m(MultiSelect, { options: this.allOutputsPlusAny, nullValue: 'None', value: system.sequencer.syncOuts, onchange (val) { system.sequencer.syncOuts = val } }),
           m('h3', 'Channels'),
-          m('div', this.system.channels.map((channel, i) => {
+          m('div', system.channels.map((channel, i) => {
             return m('div', [
-              m(Select, { options: this.allOutputsPlusAny, value: channel.inputDevice, onchange (val) { channel.inputDevice = val } }),
-              m(ChannelSelector, { showAny: true, value: channel.inputChannel, onchange (val) { channel.inputChannel = val } }),
-              ' > ',
-              m(Select, { options: Object.keys(this.system.outputs), channel: channel, onchange (val) { channel.outputDevice = val } }),
+              // m(Select, { options: this.allOutputsPlusAny, value: channel.inputDevice, onchange (val) { channel.inputDevice = val } }),
+              // m(ChannelSelector, { showAny: true, value: channel.inputChannel, onchange (val) { channel.inputChannel = val } }),
+              // ' > ',
+              m(Select, { options: Object.keys(system.outputs), value: channel.outputDevice, onchange (val) { channel.outputDevice = val } }),
               m(ChannelSelector, { value: channel.outputChannel, onchange (val) { channel.outputChannel = val } }),
               ' | ',
               m(Select, { value: channel.sequencerMode, options: ['notes', 'drums', 'drums-circuit', 'drums-volca'], onchange (val) { channel.sequencerMode = val } })

@@ -1,4 +1,4 @@
-/* global Worker */
+/* eslint-env browser */
 const m = require('mithril')
 
 const PARAM_LIMITS = {
@@ -153,7 +153,7 @@ export default class Sequencer {
     this.syncOuts.forEach((so) => this.system.sendSync(so, time))
   }
   sendNote (track, time, note, velocity, length, repeat, perTick) {
-    if (repeat == null || repeat <= 1) {
+    if (repeat == null || repeat <= 1) {
       this.system.sendChannelMessage(
         track,
         [144, note, velocity],
@@ -344,6 +344,20 @@ export default class Sequencer {
       if (newLen > 64) { newLen = 64 }
       const newNotes = notes.map((note) => {
         note.length = newLen * 24
+        return note
+      })
+      this.tracks[channel].data[time] = newNotes
+    }
+  }
+  editOctave (channel, pattern, note, increment) {
+    const time = (pattern * 16 + note) * 24
+    const notes = this.tracks[channel].data[time]
+    if (notes && notes.length > 0) {
+      const newNotes = notes.map((note) => {
+        const newNote = note.note + (increment * 12)
+        if (newNote >= 0 || newNote <= 127) {
+          note.note = newNote
+        }
         return note
       })
       this.tracks[channel].data[time] = newNotes

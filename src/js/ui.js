@@ -100,11 +100,20 @@ export default class UI {
       }
       if (fun === 'octave') {
         if (params[0] === 'up') {
-          this.system.scaler.octaveUp()
+          console.log(this.editNote)
+          if (this.editNote != null) {
+            this.system.sequencer.editOctave(this.selectedChannel, this.selectedPattern[this.selectedChannel], this.editNote, 1)
+          } else {
+            this.system.scaler.octaveUp()
+          }
           m.redraw()
         }
         if (params[0] === 'down') {
-          this.system.scaler.octaveDown()
+          if (this.editNote != null) {
+            this.system.sequencer.editOctave(this.selectedChannel, this.selectedPattern[this.selectedChannel], this.editNote, -1)
+          } else {
+            this.system.scaler.octaveDown()
+          }
           m.redraw()
         }
       }
