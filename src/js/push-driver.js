@@ -108,7 +108,6 @@ export default class PushDriver extends Eventable {
     var device = null
     ports.forEach((port) => {
       // MAC
-      console.log('PORT', port.name)
       if (port.name.match(/Ableton Push 2 Live Port/)) {
         device = port
       // Windows
@@ -116,7 +115,6 @@ export default class PushDriver extends Eventable {
         device = port
       }
     })
-    console.log('FOUND', device)
     return device
   }
   onMidiInput (event) {
@@ -182,9 +180,9 @@ export default class PushDriver extends Eventable {
       } else if (cc >= 71 && cc <= 78) {
         const signed = val < 64 ? val : val - 128
         this.trigger('push:encoder', cc - 71, signed)
-      } else if (cc >= 36 && cc <= 43 && val > 0) {        
+      } else if (cc >= 36 && cc <= 43 && val > 0) {
         this.trigger('push:repeat:on', cc - 36)
-      } else if (cc >= 36 && cc <= 43 && val === 0) {        
+      } else if (cc >= 36 && cc <= 43 && val === 0) {
         this.trigger('push:repeat:off', cc - 36)
       } else if (cc === 59 && val > 0) {
         this.trigger('push:function:on', 'user')
@@ -288,7 +286,6 @@ export default class PushDriver extends Eventable {
   sendLedsDiff (diff) {
     if (diff.length === 0) { return }
     diff.forEach((entry) => {
-      console.log("SLD", entry[0], entry[1])
       this.sendSingleFunctionEntry(entry[0], entry[1])
     })
   }

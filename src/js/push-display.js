@@ -5,11 +5,10 @@ const { initPush, sendFrame } = require('ableton-push-canvas-display')
 const STANDARD_FONT = "16px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
 const MODE_FONT = "italic 48px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
 const STEP_FONT = "48px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
-const REPEATS = ["1/4", "1/4t", "1/8", "1/8t", "1/16", "1/16t", "1/32", "1/32t"]
+const REPEATS = ['1/4', '1/4t', '1/8', '1/8t', '1/16', '1/16t', '1/32', '1/32t']
 
 export default class PushDisplay {
   constructor (system) {
-    console.log('WH')
     this.system = system
     this.canvas = document.getElementById('push-display-canvas')
     this.ctx = this.canvas.getContext('2d')
@@ -44,14 +43,13 @@ export default class PushDisplay {
     ctx.fillText('improjam', 480, 144)
 
     ctx.font = STANDARD_FONT
-    
-    if (this.system.sequencer) {
 
+    if (this.system.sequencer) {
       const s = this.system.sequencer.realStep % 16
       ctx.fillStyle = 'rgba(128, 128, 128,0.3)'
       ctx.font = STEP_FONT
       ctx.textAlign = 'center'
-      ctx.fillRect(0, 150, (s+1) * 60, 10)
+      ctx.fillRect(0, 150, (s + 1) * 60, 10)
       ctx.fillStyle = '#fff'
       ctx.font = STANDARD_FONT
       ctx.textAlign = 'start'
@@ -79,7 +77,7 @@ export default class PushDisplay {
           ctx.fillText('Velocity', 180, 50)
           ctx.fillText(`${note.velocity}`, 180, 70)
           ctx.fillText('Repeat', 300, 50)
-          ctx.fillText(`${note.repeat || 1}`, 300, 70)          
+          ctx.fillText(`${note.repeat || 1}`, 300, 70)
           ctx.textAlign = 'left'
           ctx.fillText(`Step: ${this.system.matrixView.selectedNote}`, 850, 150)
         }
@@ -101,10 +99,10 @@ export default class PushDisplay {
         ctx.fillStyle = '#fff'
         ctx.fillText(`${slotValue}`, 120 * slot + 60, 47)
         if (CONTROLLER_NAMES[channel][slot]) {
-          ctx.fillText(`${CONTROLLER_NAMES[channel][slot]}`, 120 * slot + 60, 67)  
-        }        
+          ctx.fillText(`${CONTROLLER_NAMES[channel][slot]}`, 120 * slot + 60, 67)
+        }
       }
-    } 
+    }
 
     ctx.fillStyle = '#ccc'
     ctx.textAlign = 'center'
@@ -125,22 +123,22 @@ export default class PushDisplay {
     if (this.system.ui && this.system.ui.copyMode) {
       ctx.font = MODE_FONT
       ctx.textAlign = 'left'
-      ctx.fillStyle = "#f80"
-      var text = "copy"
+      ctx.fillStyle = '#f80'
+      var text = 'copy'
       if (this.system.ui.copySource) {
         const src = this.system.ui.copySource
         text += `[${src[0] + 1}:${src[1] + 1}]`
       }
       if (this.system.ui.copyDest) {
         const dest = this.system.ui.copyDest
-        text += `>[${dest[0] + 1}:${dest[1] + 1}]` 
+        text += `>[${dest[0] + 1}:${dest[1] + 1}]`
       }
-      ctx.fillText(text, 480, 100)  
+      ctx.fillText(text, 480, 100)
     } else if (this.system.ui && this.system.ui.deleteMode) {
       ctx.font = MODE_FONT
       ctx.textAlign = 'left'
-      ctx.fillStyle = "#f00"
-      var text = "delete"
+      ctx.fillStyle = '#f00'
+      var text = 'delete'
       if (this.system.ui.deletedPattern) {
         const [c, p] = this.system.ui.deletedPattern
         text += `[${c + 1}:${p + 1}]`
@@ -149,35 +147,34 @@ export default class PushDisplay {
     } else if (this.system.ui && this.system.ui.muteMode) {
       ctx.font = MODE_FONT
       ctx.textAlign = 'left'
-      ctx.fillStyle = "#f00"
-      ctx.fillText("mute", 480, 100)
+      ctx.fillStyle = '#f00'
+      ctx.fillText('mute', 480, 100)
     } else if (this.system.ui && this.system.ui.soloMode) {
       ctx.font = MODE_FONT
       ctx.textAlign = 'left'
-      ctx.fillStyle = "#ff0"
-      ctx.fillText("solo", 480, 100)
+      ctx.fillStyle = '#ff0'
+      ctx.fillText('solo', 480, 100)
     } else if (this.system.ui && this.system.ui.scaleMode) {
       ctx.font = MODE_FONT
       ctx.textAlign = 'left'
-      ctx.fillStyle = "#fff"
-      ctx.fillText("scale", 480, 100)
+      ctx.fillStyle = '#fff'
+      ctx.fillText('scale', 480, 100)
     } else if (this.system.ui && this.system.ui.selectMode) {
       ctx.font = MODE_FONT
       ctx.textAlign = 'left'
-      ctx.fillStyle = "#fff"
-      ctx.fillText("select", 480, 100)
+      ctx.fillStyle = '#fff'
+      ctx.fillText('select', 480, 100)
     } else if (this.system.ui && this.system.ui.repeat) {
       ctx.font = MODE_FONT
       ctx.textAlign = 'left'
-      ctx.fillStyle = "#fff"
-      ctx.fillText("repeat: " + REPEATS[this.system.ui.repeat], 480, 100)
+      ctx.fillStyle = '#fff'
+      ctx.fillText('repeat: ' + REPEATS[this.system.ui.repeat], 480, 100)
     } else if (this.system.sequencer && this.system.sequencer.recording) {
       ctx.font = MODE_FONT
       ctx.textAlign = 'left'
-      ctx.fillStyle = "#f00"
-      ctx.fillText("record!", 480, 100)
+      ctx.fillStyle = '#f00'
+      ctx.fillText('record!', 480, 100)
     }
-
   }
   displayLoop () {
     this.updateDisplay()

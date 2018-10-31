@@ -1,5 +1,5 @@
 const SCALES = ['chromatic',
- 'min', 'min-m', 'min-h', 'maj']
+  'min', 'min-m', 'min-h', 'maj']
 const SCALEMAPS = {
   'chromatic': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
   'min': [0, 2, 3, 5, 7, 8, 10],
@@ -10,18 +10,17 @@ const SCALEMAPS = {
 
 const CHROMATIC_NOTES = [
   [0, 2, 4, 5, 7, 9, 11, 12],
-  [null, 1, 3, null, 6, 8, 10, null],
+  [null, 1, 3, null, 6, 8, 10, null]
 ]
 const CHROMATIC_SLOTS = [
   [0, 0], [1, 1], [0, 1], [1, 2],
   [0, 2], [0, 3], [1, 4], [0, 4],
   [1, 5], [0, 5], [1, 6], [0, 6],
-  [0, 7], 
+  [0, 7]
 ]
 
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const OCTAVES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-
 
 export default class Scaler {
   constructor () {
@@ -35,7 +34,7 @@ export default class Scaler {
     if (this.currentScale === 'chromatic') {
       const keyNote = CHROMATIC_NOTES[row][pos]
       if (keyNote != null) {
-        return this.currentOctave * 12  + keyNote  
+        return this.currentOctave * 12 + keyNote
       }
       return
     }
@@ -53,7 +52,7 @@ export default class Scaler {
       const octaveNote = this.currentOctave * 12
       const baseNote = note - octaveNote
       if (baseNote < 0 || baseNote > 12) { return [null, null] }
-      return [1-CHROMATIC_SLOTS[baseNote][0], CHROMATIC_SLOTS[baseNote][1]]
+      return [1 - CHROMATIC_SLOTS[baseNote][0], CHROMATIC_SLOTS[baseNote][1]]
     }
     const map = this.SCALEMAPS[this.currentScale] || this.SCALEMAPS['chromatic']
     const rootNote = this.NOTES.indexOf(this.currentRootNote)

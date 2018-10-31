@@ -9,7 +9,6 @@ function minInSet (set) {
   return min
 }
 
-
 export {
   maxInSet,
   minInSet

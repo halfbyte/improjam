@@ -1,4 +1,4 @@
-/* global Worker, performance */
+/* eslint-env browser */
 import AppComponent from './components/app.js'
 import PushDriver from './push-driver.js'
 import PushDisplay from './push-display.js'
@@ -8,11 +8,13 @@ import Sequencer from './sequencer.js'
 import Scaler from './scaler.js'
 import UI from './ui.js'
 
+const dialogs = require('dialogs')()
+
 const FILE_FILTER = [
-  {name: 'Improjam File', extensions: ['improjam']}
+  { name: 'Improjam File', extensions: ['improjam'] }
 ]
 
-const {ipcRenderer} = require('electron')
+const { ipcRenderer } = require('electron')
 
 const NUM_CHANNELS = 8
 const m = require('mithril')
@@ -26,10 +28,6 @@ function enumerate (devices) {
   })
   return hash
 }
-
-const ANY = -1
-
-
 
 class MIDISystem extends Eventable {
   constructor (midiAccess) {
@@ -45,10 +43,12 @@ class MIDISystem extends Eventable {
     this.ui = new UI(this, this.sequencer)
     this.matrixView = this.ui
     this.soloChannel = null
+    this.availableTemplates = []
 
-    this.loadSettings()
+    this.listTemplates()
     this.loadLastSong()
     this.initPushState()
+    this.settingsOpen = false
   }
   initPushState () {
     this.pushDriver.setChannel(this.matrixView.selectedChannel)
@@ -61,9 +61,9 @@ class MIDISystem extends Eventable {
       this.channels[i] = new Channel({}, this)
     }
   }
-  
-  clearAll() {
-    if (this.sequencer) { this.sequencer.reset() }
+
+  clearAll () {
+    if (this.sequencer) { this.sequencer.reset() }
     if (this.ui) { this.ui.reset() }
     if (this.scaler) { this.scaler.reset() }
     localStorage.removeItem('currentFile')
@@ -78,17 +78,20 @@ class MIDISystem extends Eventable {
     ipcRenderer.on('menu', (event, arg) => {
       if (arg === 'new') {
         if (confirm('Really Clear All?')) {
-          this.clearAll()  
+          this.clearAll()
           m.redraw()
-        }        
+        }
       } else if (arg === 'open') {
         this.loadAs()
       } else if (arg === 'save') {
         this.save()
       } else if (arg === 'save-as') {
         this.saveAs()
-      } else if (arg === 'save-settings') {
-        this.saveSettings()
+      } else if (arg === 'settings') {
+        this.settingsOpen = !this.settingsOpen
+        m.redraw()
+      } else if (arg === 'save-template') {
+        this.startSaveTemplate()
       }
     })
   }
@@ -130,12 +133,22 @@ class MIDISystem extends Eventable {
     this.outputs[output].send([0xFC], time)
   }
   // TODO: Implement a real save.
-  saveSettings () {
+
+  startSaveTemplate () {
+    dialogs.prompt('Save Template', 'settings', this.saveTemplate.bind(this))
+  }
+
+  saveTemplate (templateName) {
+    if (templateName == null) { return }
     const { app } = require('electron').remote
     const path = require('path')
     const userDataPath = app.getPath('userData')
     const fs = require('fs')
-    const fullPath = path.join(userDataPath, 'settings.json')
+    const dir = path.join(userDataPath, 'templates')
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir)
+    }
+    const fullPath = path.join(dir, `${templateName}.json`)
     // gather data
     const data = {
       patterns: this.sequencer.tracks,
@@ -156,33 +169,35 @@ class MIDISystem extends Eventable {
         console.log('Settings saved')
       }
     })
+    this.listTemplates()
   }
   save () {
     if (localStorage.getItem('currentFile') != null) {
       this.saveSong(localStorage.getItem('currentFile'))
     } else {
-      this.saveAs()      
+      this.saveAs()
     }
   }
 
   saveAs () {
     const { dialog } = require('electron').remote
-    const path = dialog.showSaveDialog({filters: FILE_FILTER, properties: ['openFile'], title: 'Save Improjam Song'})
+    const path = dialog.showSaveDialog({ filters: FILE_FILTER, properties: ['openFile'], title: 'Save Improjam Song' })
     if (path) {
       this.saveSong(path)
     }
-
   }
 
   // TODO: Implement a real save.
   saveSong (path) {
-    console.log("SAVING TO", path)
+    console.log('SAVING TO', path)
     // gather data
     const data = {
       patterns: this.sequencer.tracks,
       scaler: this.scaler.getConfig(),
+      channels: this.channels.map((ch) => ch.getConfig()),
       settings: {
         tempo: this.sequencer.tempo,
+        syncOuts: this.sequencer.syncOuts,
         swing: this.sequencer.swing,
         accent: this.matrixView.accent
       }
@@ -195,35 +210,35 @@ class MIDISystem extends Eventable {
       } else {
         console.log('Song saved')
         localStorage.setItem('currentFile', path)
-        this.adjustSaveAsMenu()    
+        this.adjustSaveAsMenu()
       }
     })
   }
 
-  adjustSaveAsMenu() {
+  adjustSaveAsMenu () {
     const { Menu } = require('electron').remote
     const menu = Menu.getApplicationMenu()
     const saveAs = menu.getMenuItemById('save-as')
     saveAs.enabled = localStorage.getItem('currentFile') != null
   }
 
-  loadLastSong() {
+  loadLastSong () {
     if (localStorage.getItem('currentFile') != null) {
       this.loadSong(localStorage.getItem('currentFile'))
       this.adjustSaveAsMenu()
     }
   }
 
-  loadAs() {
+  loadAs () {
     const { dialog } = require('electron').remote
-    const paths = dialog.showOpenDialog({filters: FILE_FILTER, properties: ['openFile'], title: 'Open Improjam Song'})
+    const paths = dialog.showOpenDialog({ filters: FILE_FILTER, properties: ['openFile'], title: 'Open Improjam Song' })
     if (paths) {
       this.loadSong(paths[0])
     }
   }
-  
-  loadSong(path) {
-    console.log("Loading Song from", path)
+
+  loadSong (path) {
+    console.log('Loading Song from', path)
     const fs = require('fs')
     fs.readFile(path, 'utf8', (err, data) => {
       if (err) {
@@ -241,22 +256,45 @@ class MIDISystem extends Eventable {
         if (parsed.scaler) {
           this.scaler.setConfig(parsed.scaler)
         }
+        if (parsed.channels) {
+          parsed.channels.forEach((config, index) => {
+            this.channels[index].setConfig(config)
+          })
+        }
         if (parsed.settings) {
+          this.sequencer.syncOuts = parsed.settings.syncOuts || []
           this.sequencer.tempo = parsed.settings.tempo || 120
           this.sequencer.swing = parsed.settings.swing || 0
           this.sequencer.syncOut = parsed.settings.syncOut || -1
           this.matrixView.accent = !!parsed.settings.accent
         }
       }
-    })      
+    })
   }
 
-  loadSettings () {
+  listTemplates () {
     const { app } = require('electron').remote
     const path = require('path')
     const userDataPath = app.getPath('userData')
     const fs = require('fs')
-    const fullPath = path.join(userDataPath, 'settings.json')
+    const fullPath = path.join(userDataPath, 'templates')
+    this.availableTemplates = []
+    fs.readdir(fullPath, (err, files) => {
+      if (err) { console.log('Error reading templates', err) }
+      files.forEach(file => {
+        const baseName = path.basename(file, '.json')
+        this.availableTemplates.push(baseName)
+      })
+      m.redraw()
+    })
+  }
+
+  loadTemplate (templateName) {
+    const { app } = require('electron').remote
+    const path = require('path')
+    const userDataPath = app.getPath('userData')
+    const fs = require('fs')
+    const fullPath = path.join(userDataPath, 'templates', `${templateName}.json`)
     console.log('Loading settings from: ', fullPath)
 
     fs.readFile(fullPath, 'utf8', (err, data) => {

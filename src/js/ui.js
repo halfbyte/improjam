@@ -1,8 +1,8 @@
-import { maxInSet, minInSet} from './in-set.js'
+import { maxInSet, minInSet } from './in-set.js'
 const m = require('mithril')
 
 const ENCODER_FACTOR = 4
-const REPEAT_MODE = [24*4, 18*4, 12*4, 9*4, 6*4, 18, 12, 9]
+const REPEAT_MODE = [24 * 4, 18 * 4, 12 * 4, 9 * 4, 6 * 4, 18, 12, 9]
 
 const COLOR_NAMES = {
   pattern: 'red',
@@ -14,7 +14,7 @@ const COLOR_NAMES = {
   rootNote: 'cyan',
   selectedNote: 'light-blue',
   selectedRootNote: 'light-cyan',
-  activeNote: 'white'  
+  activeNote: 'white'
 }
 
 const DRUM_MODES = {
@@ -36,13 +36,12 @@ export default class UI {
           this.selectedPattern[this.selectedChannel] = led
         } else if (this.copyMode) {
           if (!this.copySource) {
-            this.copySource = [this.selectedChannel, led]  
+            this.copySource = [this.selectedChannel, led]
           } else {
             // just for display
             this.copyDest = [this.selectedChannel, led]
             this.sequencer.copyPattern(this.copySource, [this.selectedChannel, led])
           }
-          
         } else if (this.deleteMode) {
           this.deletedPattern = [this.selectedChannel, led]
           this.sequencer.deletePattern(this.selectedChannel, led)
@@ -151,14 +150,13 @@ export default class UI {
     this.system.pushDriver.on('push:repeat:on', (repeat) => {
       this.sequencer.setRepeat(this.selectedChannel, REPEAT_MODE[repeat])
       this.repeat = repeat
-    })      
+    })
     this.system.pushDriver.on('push:repeat:off', (repeat) => {
       this.sequencer.clearRepeat()
       this.repeat = null
-    })      
-    this.system.pushDriver.on('push:encoder', (encoder, increment) => {      
+    })
+    this.system.pushDriver.on('push:encoder', (encoder, increment) => {
       if (this.editNote != null) {
-
         if (encoder === 0) {
           this.sequencer.editParam(this.selectedChannel, this.selectedPattern[this.selectedChannel], this.editNote, this.noteForSelectedDrum(), 'length', this.slowIncrement(encoder, increment, 8))
         } else if (encoder === 1) {
@@ -199,7 +197,7 @@ export default class UI {
       m.redraw()
     })
   }
-  slowIncrement(encoder, increment, factor) {
+  slowIncrement (encoder, increment, factor) {
     const oldValue = Math.floor(this.encoderCache[encoder] / factor)
     this.encoderCache[encoder] += increment
     const newValue = Math.floor(this.encoderCache[encoder] / factor)
@@ -299,12 +297,11 @@ export default class UI {
             if (row >= 0 && row <= 1) {
               const led = 48 + (row) * 8 + pos
               this.leds[led] = COLOR_NAMES.activeNote
-            }          
+            }
           }
         })
       }
     }
-    
   }
   refreshForDrumsSequencer (mode) {
     var i
@@ -336,12 +333,11 @@ export default class UI {
           notes.forEach((note) => {
             const pad = this.selectedDrumForNote(note.note)
             if (pad != null) {
-              this.leds[pad + 48] = COLOR_NAMES.activeNote  
-            }            
+              this.leds[pad + 48] = COLOR_NAMES.activeNote
+            }
           })
         }
       }
-
     }
   }
   setNote (pos) {
@@ -412,7 +408,7 @@ export default class UI {
         if (this.selectedNote === index - 16) {
           this.selectedNote = null
         }
-      } 
+      }
       if (index >= 48) {
         const row = 1 - Math.floor((index - 48) / 8)
         const pos = index % 8
@@ -432,11 +428,10 @@ export default class UI {
         const note = this.noteForSelectedDrum()
         this.sequencer.toggleNote(this.selectedChannel, time, note, this.savedVelocity)
       }
-
     }
     m.redraw()
   }
-  noteForSelectedDrum (drum=null) {
+  noteForSelectedDrum (drum = null) {
     if (drum == null) {
       drum = this.selectedDrum
     }
@@ -446,7 +441,6 @@ export default class UI {
       const col = drum % 8
       const pad = (1 - row) * 8 + col
       return pad + this.system.scaler.currentOctave * 12
-      
     } else {
       if (DRUM_MODES[mode] && drum < DRUM_MODES[mode].length) {
         return DRUM_MODES[mode][drum]
@@ -463,10 +457,10 @@ export default class UI {
       return row * 8 + col
     } else {
       return 0
-    }    
+    }
   }
 
-  selectChannel(ch) {
+  selectChannel (ch) {
     ch = parseInt(ch, 10)
     this.selectedOctave[this.selectedChannel] = this.system.scaler.currentOctave
     this.selectedChannel = ch
@@ -474,7 +468,7 @@ export default class UI {
     this.system.pushDriver.setChannel(ch)
   }
 
-  reset() {
+  reset () {
     this.selectedChannel = 0
     this.selectedPattern = [0, 0, 0, 0, 0, 0, 0, 0]
     this.selectedOctave = [3, 3, 3, 3, 3, 3, 3, 3]

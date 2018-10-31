@@ -4,12 +4,12 @@ const m = require('mithril')
 const PARAM_LIMITS = {
   length: [1, 64],
   velocity: [1, 127],
-  repeat: [1, 4],
+  repeat: [1, 4]
 }
 const PARAM_FACTORS = {
   length: 24,
   velocity: 1,
-  repeat: 1,
+  repeat: 1
 }
 
 const STEPS_TO_SCHEDULE = 48
@@ -35,8 +35,8 @@ export default class Sequencer {
     this.tick = 0
     this.scheduleNextNotes()
   }
-  clearTracks() {
-    var i;
+  clearTracks () {
+    var i
     this.tracks = []
     for (i = 0; i < this.numChannels; i++) {
       this.tracks[i] = {
@@ -51,11 +51,11 @@ export default class Sequencer {
     }
   }
 
-  reset() {
+  reset () {
     this.clearTracks()
     this.tempo = 120
     this.swing = 0
-    this.stop()    
+    this.stop()
   }
 
   start () {
@@ -65,7 +65,7 @@ export default class Sequencer {
   }
   stop () {
     this.playing = false
-    this.syncOuts.forEach((so) => this.system.sendStop(so, this.nextTime)) 
+    this.syncOuts.forEach((so) => this.system.sendStop(so, this.nextTime))
   }
   playPause () {
     if (this.playing) {
@@ -74,7 +74,7 @@ export default class Sequencer {
       this.start()
     }
   }
-  notesForStep(t, step) {
+  notesForStep (t, step) {
     const track = this.tracks[t]
     const trackOffset = track.firstPattern * (16 * 24)
     const trackLength = track.length * 16 * 24
@@ -125,7 +125,7 @@ export default class Sequencer {
             }
           })
         }
-  
+
         if (this.playing) {
           for (t = 0; t < numTracks; t++) {
             const track = this.tracks[t]
@@ -163,11 +163,11 @@ export default class Sequencer {
         track,
         [128, note, velocity],
         time + (length * perTick)
-      )      
+      )
     } else {
       const stepLen = 24 * perTick / repeat
       const steps = (length / 24) * repeat
-      for(var i=0;i<steps;i++) {
+      for (var i = 0; i < steps; i++) {
         this.system.sendChannelMessage(
           track,
           [144, note, velocity],
@@ -235,7 +235,6 @@ export default class Sequencer {
     this.openRepeatNotes.push([track, note, velocity])
   }
   previewNoteOff (track, note) {
-    //console.log('POFF', track, note)
     this.system.sendChannelMessage(
       track,
       [128, note, 0]
@@ -243,7 +242,6 @@ export default class Sequencer {
     this.openRepeatNotes = this.openRepeatNotes.filter((n) => {
       return n[0] !== track || n[1] !== note
     })
-
   }
   recordNoteOn (track, note, velocity) {
     if (!this.recording || !this.playing) { return }
@@ -286,7 +284,7 @@ export default class Sequencer {
     const [srcChannel, srcPattern] = src
     const [destChannel, destPattern] = dest
 
-    for (var i=0;i< (16*26); i++) {
+    for (var i = 0; i < (16 * 26); i++) {
       this.tracks[destChannel].data[i + (destPattern * 16 * 24)] = this.tracks[srcChannel].data[i + (srcPattern * 16 * 24)]
     }
   }
@@ -305,7 +303,7 @@ export default class Sequencer {
       }
     }
   }
-  clampParamToLimits(value, param) {
+  clampParamToLimits (value, param) {
     if (value < PARAM_LIMITS[param][0]) { value = PARAM_LIMITS[param][0] }
     if (value > PARAM_LIMITS[param][1]) { value = PARAM_LIMITS[param][1] }
     return value
@@ -316,14 +314,14 @@ export default class Sequencer {
     if (notes && notes.length > 0) {
       if (drumNote) {
         const foundNote = notes.find((note) => note.note === drumNote)
-        const oldParam = (foundNote[param] || PARAM_LIMITS[param][0]) / PARAM_FACTORS[param] 
+        const oldParam = (foundNote[param] || PARAM_LIMITS[param][0]) / PARAM_FACTORS[param]
         const newParam = this.clampParamToLimits(oldParam + increment, param)
         const newNotes = notes.map((note) => {
           if (note.note === drumNote) {
             note[param] = newParam * PARAM_FACTORS[param]
           }
           return note
-        })        
+        })
         this.tracks[channel].data[time] = newNotes
       } else {
         const oldParam = (notes[0][param] || PARAM_LIMITS[param][0]) / PARAM_FACTORS[param]
@@ -331,9 +329,9 @@ export default class Sequencer {
         const newNotes = notes.map((note) => {
           note[param] = newParam * PARAM_FACTORS[param]
           return note
-        })        
+        })
         this.tracks[channel].data[time] = newNotes
-      }    
+      }
     }
   }
   editLength (channel, pattern, note, increment) {
@@ -373,11 +371,10 @@ export default class Sequencer {
     this.swing = newSwing
     m.redraw()
   }
-  setRepeat(channel, repeat) {
-    console.log(channel, repeat)
-    this.repeat = {channel: channel, repeat: repeat}
+  setRepeat (channel, repeat) {
+    this.repeat = { channel: channel, repeat: repeat }
   }
-  clearRepeat() {
+  clearRepeat () {
     this.repeat = null
   }
 }

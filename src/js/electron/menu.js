@@ -1,7 +1,7 @@
 const { Menu, app } = require('electron')
 
-function makeMenu(win) {
-    const template = [
+function makeMenu (win) {
+  const template = [
     {
       label: 'File',
       submenu: [
@@ -9,28 +9,34 @@ function makeMenu(win) {
         { label: 'Open...', accelerator: 'CommandOrControl+O', click: () => win.webContents.send('menu', 'open') },
         { label: 'Save', accelerator: 'CommandOrControl+S', click: () => win.webContents.send('menu', 'save'), id: 'save' },
         { label: 'Save As...', accelerator: 'CmdOrCtrl+Shift+S', click: () => win.webContents.send('menu', 'save-as'), id: 'save-as', enabled: false },
-        { label: 'Save Settings', click: () => win.webContents.send('menu', 'save-settings') }
+        { label: 'Save Template...', click: () => win.webContents.send('menu', 'save-template') }
       ]
     },
     {
       label: 'View',
       submenu: [
-        {role: 'reload'},
-        {role: 'forcereload'},
-        {role: 'toggledevtools'},
-        {type: 'separator'},
-        {role: 'resetzoom'},
-        {role: 'zoomin'},
-        {role: 'zoomout'},
-        {type: 'separator'},
-        {role: 'togglefullscreen'}
+        { role: 'reload' },
+        { role: 'forcereload' },
+        { role: 'toggledevtools' },
+        { type: 'separator' },
+        { role: 'resetzoom' },
+        { role: 'zoomin' },
+        { role: 'zoomout' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' }
       ]
     },
     {
       role: 'window',
       submenu: [
-        {role: 'minimize'},
-        {role: 'close'}
+        { role: 'minimize' },
+        { role: 'close' }
+      ]
+    },
+    {
+      'label': 'Preferences',
+      submenu: [
+        { label: 'Settings...', accelerator: 'CommandOrControl+,', click: () => win.webContents.send('menu', 'settings') }
       ]
     },
     {
@@ -43,45 +49,45 @@ function makeMenu(win) {
       ]
     }
   ]
-  
+
   if (process.platform === 'darwin') {
     template.unshift({
       label: app.getName(),
       submenu: [
-        {role: 'about'},
-        {type: 'separator'},
-        {role: 'services', submenu: []},
-        {type: 'separator'},
-        {role: 'hide'},
-        {role: 'hideothers'},
-        {role: 'unhide'},
-        {type: 'separator'},
-        {role: 'quit'}
+        { role: 'about' },
+        { type: 'separator' },
+        { role: 'services', submenu: [] },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideothers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' }
       ]
     })
-  
+
     // Edit menu
     template[1].submenu.push(
-      {type: 'separator'},
+      { type: 'separator' },
       {
         label: 'Speech',
         submenu: [
-          {role: 'startspeaking'},
-          {role: 'stopspeaking'}
+          { role: 'startspeaking' },
+          { role: 'stopspeaking' }
         ]
       }
     )
-  
+
     // Window menu
     template[3].submenu = [
-      {role: 'close'},
-      {role: 'minimize'},
-      {role: 'zoom'},
-      {type: 'separator'},
-      {role: 'front'}
+      { role: 'close' },
+      { role: 'minimize' },
+      { role: 'zoom' },
+      { type: 'separator' },
+      { role: 'front' }
     ]
   }
-  
+
   return Menu.buildFromTemplate(template)
 }
 module.exports = makeMenu

@@ -8,7 +8,8 @@ class Select {
     this.nullValue = vnode.attrs.nullValue || 'Any'
   }
   view (vnode) {
-    return m('select', { onchange: (event) => this.change(event) }, this.options.map((option) => {
+    const options = vnode.attrs.options
+    return m('select', { onchange: (event) => this.change(event) }, options.map((option) => {
       const optname = option === -1 ? this.nullValue : option
       return m('option', { value: option, selected: vnode.attrs.value && option.toString(10) === vnode.attrs.value.toString(10) }, optname)
     }))
@@ -20,9 +21,6 @@ class Select {
   }
 }
 class MultiSelect extends Select {
-  constructor (vnode) {
-    super(vnode)
-  }
   view (vnode) {
     return m('select', { multiple: true, size: 8, onchange: (event) => this.change(event) }, this.options.map((option) => {
       const optname = option === -1 ? this.nullValue : option
@@ -31,7 +29,6 @@ class MultiSelect extends Select {
   }
   change (event) {
     if (this.onchange) {
-      console.log(Array.from(event.target.selectedOptions))
       this.onchange(Array.prototype.map.call(event.target.selectedOptions, (opt) => opt.value))
     }
   }
@@ -74,12 +71,16 @@ class Matrix {
     this.matrixView = vnode.attrs.matrixView
   }
   view (vnode) {
+    const matrixView = vnode.attrs.matrixView
+    if (matrixView == null) {
+      return []
+    }
     const nodes = []
     for (var i = 0; i < 64; i++) {
       nodes.push(
         m(MatrixButton, {
-          onclick: (index) => this.matrixView.ledClick(index),
-          ledState: this.matrixView.ledState(i),
+          onclick: (index) => matrixView.ledClick(index),
+          ledState: matrixView.ledState(i),
           index: i
 
         })
@@ -89,48 +90,96 @@ class Matrix {
   }
 }
 
+class Settings {
+  constructor (vnode) {
+    this.system = vnode.attrs.system
+  }
+  view (vnode) {
+    const system = vnode.attrs.system
+
+    if (!system.settingsOpen) { return [] }
+    this.allOutputs = Object.keys(system.outputs)
+    this.allOutputsPlusAny = [-1].concat(this.allOutputs)
+    return [
+      m('div', { class: 'settings' },
+        [
+          m('h2', 'Settings'),
+          m('h3', 'Sync'),
+          m(MultiSelect, { options: this.allOutputsPlusAny, nullValue: 'None', value: system.sequencer.syncOuts, onchange (val) { system.sequencer.syncOuts = val } }),
+          m('h3', 'Channels'),
+          m('div', this.system.channels.map((channel, i) => {
+            return m('div', [
+              m(Select, { options: this.allOutputsPlusAny, value: channel.inputDevice, onchange (val) { channel.inputDevice = val } }),
+              m(ChannelSelector, { showAny: true, value: channel.inputChannel, onchange (val) { channel.inputChannel = val } }),
+              ' > ',
+              m(Select, { options: Object.keys(this.system.outputs), channel: channel, onchange (val) { channel.outputDevice = val } }),
+              m(ChannelSelector, { value: channel.outputChannel, onchange (val) { channel.outputChannel = val } }),
+              ' | ',
+              m(Select, { value: channel.sequencerMode, options: ['notes', 'drums', 'drums-circuit', 'drums-volca'], onchange (val) { channel.sequencerMode = val } })
+            ])
+          }))
+        ]
+      )
+    ]
+  }
+}
+
+class TemplateLoader {
+  constructor (vnode) {
+    this.selectedTemplate = null
+    this.system = vnode.attrs.system
+  }
+  view (vnode) {
+    if (vnode.attrs.system.availableTemplates != null) {
+      this.selectedTemplate = this.selectedTemplate || vnode.attrs.system.availableTemplates[0]
+    }
+    const tmpl = vnode.attrs.system.availableTemplates
+    return [
+      m('label', [
+        'Templates: ',
+        m(Select, { onchange: (val) => { this.selectedTemplate = val }, options: tmpl, value: this.selectedTemplate })
+      ]),
+      m('button', { onclick: this.load.bind(this) }, 'Load')
+    ]
+  }
+  load (event) {
+    if (this.selectedTemplate != null) {
+      this.system.loadTemplate(this.selectedTemplate)
+    }
+  }
+}
+
 export default class App {
   constructor (vnode) {
     this.system = vnode.attrs.system
-    this.allOutputs = Object.keys(this.system.outputs)
-    this.allOutputsPlusAny = [-1].concat(this.allOutputs)
+    this.version = require('electron').remote.app.getVersion()
   }
-  view () {
-    this.system.ui.refreshLeds()
+  view (vnode) {
+    if (this.system.ui) { this.system.ui.refreshLeds() }
+    const scales = (this.system.scaler != null) ? this.system.scaler.SCALES : []
+    const notes = (this.system.scaler != null) ? this.system.scaler.NOTES : []
+    const octaves = (this.system.scaler != null) ? this.system.scaler.OCTAVES : []
 
-    var system = this.system
+    const currentScale = this.system.scaler && this.system.scaler.currentScale
+    const currentRootNote = this.system.scaler && this.system.scaler.currentRootNote
+    const currentOctave = this.system.scaler && this.system.scaler.currentOctave
+
+    var system = vnode.attrs.system
     return [
-      m('div', [
-        m('label', [
-          'Sync:',
-          m(MultiSelect, { options: this.allOutputsPlusAny, nullValue: 'None', value: system.sequencer.syncOuts, onchange (val) { system.sequencer.syncOuts = val } })
-        ])
-      ]),
-      m('h2', 'Channels'),
-      m('div', this.system.channels.map((channel, i) => {
-        return m('div', [
-          m('button', { class: 'channel-name', onclick: (e) => { this.system.ui.selectChannel(i);e.preventDefault(); } }, `${i.toString(16).toUpperCase()}`),
-          m(Select, { options: this.allOutputsPlusAny, value: channel.inputDevice, onchange (val) { channel.inputDevice = val } }),
-          m(ChannelSelector, { showAny: true, value: channel.inputChannel, onchange (val) { channel.inputChannel = val } }),
-          ' > ',
-          m(Select, { options: Object.keys(this.system.outputs), channel: channel, onchange (val) { channel.outputDevice = val } }),
-          m(ChannelSelector, { value: channel.outputChannel, onchange (val) { channel.outputChannel = val } }),
-          ' | ',
-          m(Select, { value: channel.sequencerMode, options: ['notes', 'drums', 'drums-circuit', 'drums-volca'], onchange (val) { channel.sequencerMode = val } })
-        ])
-      })),
-      m('h2', 'Matrix'),
-      m('div', { class: 'cf' }, m('div', { class: 'matrix' }, m(Matrix, { matrixView: this.system.matrixView }))),
+      m('h1', `improjam V${this.version}`),
+      m(TemplateLoader, { system: system }),
+      m(Settings, { system: system, open: system.settingsOpen }),
+      m('div', { class: 'cf' }, m('div', { class: 'matrix' }, m(Matrix, { matrixView: vnode.attrs.system.matrixView }))),
 
       m('h2', 'Scale'),
       m('div', [
         m('label', [
           ' Scale: ',
-          m(Select, { options: this.system.scaler.SCALES, value: this.system.scaler.currentScale, onchange: (val) => { this.system.scaler.currentScale = val } }),
+          m(Select, { options: scales, value: currentScale, onchange: (val) => { this.system.scaler.currentScale = val } }),
           ' Note: ',
-          m(Select, { options: this.system.scaler.NOTES, value: this.system.scaler.currentRootNote, onchange: (val) => { this.system.scaler.currentRootNote = val } }),
+          m(Select, { options: notes, value: currentRootNote, onchange: (val) => { this.system.scaler.currentRootNote = val } }),
           ' Oct: ',
-          m(Select, { options: this.system.scaler.OCTAVES, value: this.system.scaler.currentOctave, onchange: (val) => { this.system.scaler.currentOctave = val } })
+          m(Select, { options: octaves, value: currentOctave, onchange: (val) => { this.system.scaler.currentOctave = val } })
         ])
       ])
     ]
