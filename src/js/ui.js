@@ -57,6 +57,7 @@ export default class UI {
       if (led >= 16 && led < 48) {
         if (this.editNote === null) {
           this.editNote = led - 16
+          m.redraw()
         }
       }
     })
@@ -68,6 +69,7 @@ export default class UI {
       if (led >= 16 && led < 48) {
         if (this.editNote === led - 16) {
           this.editNote = null
+          m.redraw()
         }
       }
     })
@@ -82,6 +84,16 @@ export default class UI {
       if (fun === 'accent') {
         this.accent = !this.accent
         m.redraw()
+      }
+      if (fun === 'cursor-left') {
+        if (this.editNote != null) {
+          this.sequencer.nudgeNote(this.selectedChannel, this.selectedPattern[this.selectedChannel], this.editNote, this.noteForSelectedDrum(), -1)
+        }
+      }
+      if (fun === 'cursor-right') {
+        if (this.editNote != null) {
+          this.sequencer.nudgeNote(this.selectedChannel, this.selectedPattern[this.selectedChannel], this.editNote, this.noteForSelectedDrum(), 1)
+        }
       }
       if (fun === 'scale') {
         this.scaleMode = true
@@ -244,6 +256,8 @@ export default class UI {
     this.system.pushDriver.setPlaying(this.sequencer.playing)
     this.system.pushDriver.setRecording(this.sequencer.recording)
     this.system.pushDriver.setAutomate(this.controllerMode, this.sequencer.recording)
+
+    this.system.pushDriver.setCursorKeysHorizontal(this.editNote != null)
 
     if (this.muteMode) {
       this.system.pushDriver.refreshMutes(this.system.channels)

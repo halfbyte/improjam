@@ -396,6 +396,31 @@ export default class Sequencer {
       this.tracks[channel].data[time] = newNotes
     }
   }
+
+  nudgeNote (channel, pattern, step, drumNote, increment) {
+    const time = (pattern * 16 + step)
+    let newStep = step + increment % 16
+    if (newStep < 0) { newStep = 16 + newStep }
+    const newTime = (pattern * 16 + newStep)
+    const notes = this.tracks[channel].data[time]
+    if (notes == null) { return }
+    if (drumNote) {
+      const newNotes = notes.filter((note) => {
+        return note.note === drumNote
+      })
+      this.tracks[channel].data[time] = notes.filter((note) => {
+        return note.note !== drumNote
+      })
+      this.tracks[channel].data[newTime] = this.tracks[channel].data[newTime] || []
+      this.tracks[channel].data[newTime] = this.tracks[channel].data[newTime].concat(newNotes)
+    } else {
+      this.tracks[channel].data[newTime] = this.tracks[channel].data[newTime] || []
+      this.tracks[channel].data[newTime] = this.tracks[channel].data[newTime].concat(notes)
+      this.tracks[channel].data[time] = null
+    }
+    m.redraw()
+  }
+
   changeTempo (inc) {
     var newTempo = this.tempo + inc
     if (newTempo > 200) {

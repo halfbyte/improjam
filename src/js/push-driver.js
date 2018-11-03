@@ -167,6 +167,14 @@ export default class PushDriver extends Eventable {
         this.trigger('push:function:on', 'accent')
       } else if (cc === 57 && val === 0) {
         this.trigger('push:function:off', 'accent')
+      } else if (cc === 44 && val > 0) {
+        this.trigger('push:function:on', 'cursor-left')
+      } else if (cc === 44 && val === 0) {
+        this.trigger('push:function:off', 'cursor-left')
+      } else if (cc === 45 && val > 0) {
+        this.trigger('push:function:on', 'cursor-right')
+      } else if (cc === 45 && val === 0) {
+        this.trigger('push:function:off', 'cursor-right')
       } else if (cc === 58 && val > 0) {
         this.trigger('push:function:on', 'scale')
       } else if (cc === 58 && val === 0) {
@@ -284,12 +292,18 @@ export default class PushDriver extends Eventable {
   setAutomate (on, recording) {
     this.setFunctionLeds([[89, [0, on ? (recording ? COLORS.red : COLORS.green) : COLORS['dark-grey']]]])
   }
+  setCursorKeysHorizontal (on) {
+    console.log(on)
+    const color = on ? COLORS.white : COLORS['dark-grey']
+    this.setFunctionLeds([[44, [0, color]], [45, [0, color]]])
+  }
   sendDiff (diff) {
     if (diff.length === 0) { return }
     diff.forEach((entry) => {
       this.sendSingleMatrixEntry(entry[0], entry[1])
     })
   }
+
   sendLedsDiff (diff) {
     if (diff.length === 0) { return }
     diff.forEach((entry) => {

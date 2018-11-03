@@ -148,6 +148,7 @@ Other things I did do today:
 - Quickly implemented a note nudge, so that you can do more elaborate swing schemes by nudging each note individually.
 - Make Track names editable and color track headers on the display according to the mute/solo status to have a permanent display
 - Reversed the priority of mute and solo so that a soloe'd track will always play regardless of mute status.
+- Move Notes across the grid. This is not as fluent as it could be (you can only move the notes one step at a time), but it's good enough for fixing the usual "recorded note is a step too late" problem.
 
 
 
