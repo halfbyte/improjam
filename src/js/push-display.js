@@ -63,7 +63,7 @@ export default class PushDisplay {
       ctx.fillText(`Octave: ${this.system.scaler.currentOctave}`, 130, 150)
     }
     if (this.system.matrixView && this.system.matrixView.editNote != null) {
-      const time = (this.system.matrixView.selectedPattern[this.system.matrixView.selectedChannel] * 16 + this.system.matrixView.editNote) * 24
+      const time = (this.system.matrixView.selectedPattern[this.system.matrixView.selectedChannel] * 16 + this.system.matrixView.editNote)
       const notes = this.system.sequencer.tracks[this.system.matrixView.selectedChannel].data[time]
       if (notes && notes.length > 0) {
         var note = notes[0] // only display data for first note
@@ -73,11 +73,13 @@ export default class PushDisplay {
         if (note) {
           ctx.textAlign = 'center'
           ctx.fillText('Length', 60, 50)
-          ctx.fillText(`${note.length / 24}`, 60, 70)
+          ctx.fillText(`${note.length}`, 60, 70)
           ctx.fillText('Velocity', 180, 50)
           ctx.fillText(`${note.velocity}`, 180, 70)
-          ctx.fillText('Repeat', 300, 50)
-          ctx.fillText(`${note.repeat || 1}`, 300, 70)
+          ctx.fillText('Nudge', 300, 50)
+          ctx.fillText(`${note.nudge || 0}`, 300, 70)
+          ctx.fillText('Repeat', 420, 50)
+          ctx.fillText(`${note.repeat || 1}`, 420, 70)
           ctx.textAlign = 'left'
           ctx.fillText(`Step: ${this.system.matrixView.selectedNote}`, 850, 150)
         }

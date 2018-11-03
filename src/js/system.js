@@ -126,15 +126,14 @@ class MIDISystem extends Eventable {
     }
   }
   sendSync (output, time) {
-    this.outputs[output].send([0xF8], time)
+    this.outputs[output] != null && this.outputs[output].send([0xF8], time)
   }
   sendStart (output, time) {
-    this.outputs[output].send([0xFA], time)
+    this.outputs[output] != null && this.outputs[output].send([0xFA], time)
   }
   sendStop (output, time) {
-    this.outputs[output].send([0xFC], time)
+    this.outputs[output] != null && this.outputs[output] != null && this.outputs[output].send([0xFC], time)
   }
-  // TODO: Implement a real save.
 
   startSaveTemplate () {
     dialogs.prompt('Save Template', this.currentTemplate, this.saveTemplate.bind(this))
@@ -191,8 +190,6 @@ class MIDISystem extends Eventable {
 
   // TODO: Implement a real save.
   saveSong (path) {
-    console.log('SAVING TO', path)
-    // gather data
     const data = {
       patterns: this.sequencer.tracks,
       scaler: this.scaler.getConfig(),
@@ -202,9 +199,9 @@ class MIDISystem extends Eventable {
         syncOuts: this.sequencer.syncOuts,
         swing: this.sequencer.swing,
         accent: this.matrixView.accent
-      }
+      },
+      version: '2.0'
     }
-    // write config
     const fs = require('fs')
     fs.writeFile(path, JSON.stringify(data, null, 2), (err) => {
       if (err) {
@@ -244,11 +241,11 @@ class MIDISystem extends Eventable {
     const fs = require('fs')
     fs.readFile(path, 'utf8', (err, data) => {
       if (err) {
-        console.log("Couldn't load settings", err)
+        dialogs.alert(`Error loading song: ${err}`)
       } else {
         const parsed = JSON.parse(data)
         if (parsed.patterns) {
-          this.sequencer.tracks = parsed.patterns
+          this.sequencer.loadPatterns(parsed.patterns, parsed.version)
         }
         if (parsed.channels) {
           parsed.channels.forEach((config, index) => {
@@ -302,7 +299,7 @@ class MIDISystem extends Eventable {
 
     fs.readFile(fullPath, 'utf8', (err, data) => {
       if (err) {
-        console.log("Couldn't load settings", err)
+        dialogs.alert(`Error loading template: ${err}`)
       } else {
         const parsed = JSON.parse(data)
         if (parsed.channels) {
@@ -314,6 +311,7 @@ class MIDISystem extends Eventable {
           this.sequencer.syncOuts = parsed.settings.syncOuts || []
         }
         this.currentTemplate = templateName
+        m.redraw()
       }
     })
   }
@@ -321,6 +319,7 @@ class MIDISystem extends Eventable {
 
 navigator.requestMIDIAccess({ sysex: true }).then((access) => {
   const midiSystem = new MIDISystem(access)
+  window._midiSystem = midiSystem // for debugging purposes
   const root = document.getElementById('root')
   m.mount(root, { view: function () { return m(AppComponent, { system: midiSystem }) } })
 }).catch((error) => {

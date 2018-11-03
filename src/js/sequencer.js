@@ -1,15 +1,12 @@
 /* eslint-env browser */
 const m = require('mithril')
 
+// MIN, MAX, [DEFAULT]
 const PARAM_LIMITS = {
   length: [1, 64],
   velocity: [1, 127],
-  repeat: [1, 4]
-}
-const PARAM_FACTORS = {
-  length: 24,
-  velocity: 1,
-  repeat: 1
+  repeat: [1, 4],
+  nudge: [-12, 12, 0]
 }
 
 const SWING_LIMIT = 36
@@ -38,10 +35,13 @@ export default class Sequencer {
     this.scheduleNextNotes()
   }
   clearTracks () {
-    var i
-    this.tracks = []
-    for (i = 0; i < this.numChannels; i++) {
-      this.tracks[i] = {
+    this.tracks = this.makeBlankTracksData()
+  }
+
+  makeBlankTracksData () {
+    const tracks = []
+    for (var i = 0; i < this.numChannels; i++) {
+      tracks[i] = {
         // pattern to start at
         firstPattern: 0,
         // pattern to end with
@@ -50,6 +50,30 @@ export default class Sequencer {
         data: [],
         mode: 'note'
       }
+    }
+    return tracks
+  }
+
+  loadPatterns (data, version = null) {
+    if (version == null) {
+      const newTracks = this.makeBlankTracksData()
+      // convert from old timebase
+      console.log('Converting timebase')
+      data.forEach((track, trackIndex) => {
+        track.data.forEach((notes, tick) => {
+          const step = Math.round(tick / 24)
+          if (notes != null) {
+            const newNotes = notes.map((note) => {
+              note.length = Math.round(note.length / 24)
+              return note
+            })
+            newTracks[trackIndex].data[step] = newNotes
+          }
+        })
+      })
+      this.tracks = newTracks
+    } else {
+      this.tracks = data
     }
   }
 
@@ -78,9 +102,9 @@ export default class Sequencer {
   }
   notesForStep (t, step) {
     const track = this.tracks[t]
-    const trackOffset = track.firstPattern * (16 * 24)
-    const trackLength = track.length * 16 * 24
-    const tick = ((step * 24) % trackLength) + trackOffset
+    const trackOffset = track.firstPattern * 16
+    const trackLength = track.length * 16
+    const tick = ((step) % trackLength) + trackOffset
     return track.data[tick]
   }
   scheduleNextNotes () {
@@ -137,12 +161,19 @@ export default class Sequencer {
             const trackOffset = track.firstPattern * (16 * 24)
             const trackLength = track.length * 16 * 24
             const tick = ((this.tick + i) % trackLength) + trackOffset
-            if (track.data[tick]) {
-              track.data[tick].forEach((event) => {
-                if (event.type === 'note') {
-                  this.sendNote(t, time, event.note, event.velocity, event.length, event.repeat, perTick)
-                }
-              })
+            if (tick % 24 === 0) {
+              const step = tick / 24
+              if (track.data[step]) {
+                track.data[step].forEach((event) => {
+                  if (event.type === 'note') {
+                    let nudgeTime = 0
+                    if (event.nudge != null) {
+                      nudgeTime = (event.nudge * perTick)
+                    }
+                    this.sendNote(t, time + nudgeTime, event.note, event.velocity, event.length, event.repeat, perTick)
+                  }
+                })
+              }
             }
           }
         }
@@ -167,11 +198,11 @@ export default class Sequencer {
       this.system.sendChannelMessage(
         track,
         [128, note, velocity],
-        time + (length * perTick)
+        time + (length * 24 * perTick)
       )
     } else {
       const stepLen = 24 * perTick / repeat
-      const steps = (length / 24) * repeat
+      const steps = length * repeat
       for (var i = 0; i < steps; i++) {
         this.system.sendChannelMessage(
           track,
@@ -193,7 +224,7 @@ export default class Sequencer {
       0
     )
   }
-  toggleNote (track, time, note, velocity = 100, length = 24) {
+  toggleNote (track, time, note, velocity = 100, length = 1) {
     if (this.recording) { return }
     if (this.tracks[track].data[time]) {
       const existing = this.tracks[track].data[time].find((n) => {
@@ -275,9 +306,9 @@ export default class Sequencer {
       if (offRounded < onRounded) {
         offRounded += 256
       }
-      const length = Math.max(1, offRounded - onRounded) * 24
+      const length = Math.max(1, offRounded - onRounded)
       const stepInPattern = onRounded % (this.tracks[track].length * 16)
-      const time = (this.tracks[track].firstPattern * 16 + stepInPattern) * 24
+      const time = (this.tracks[track].firstPattern * 16 + stepInPattern)
       this.addNote(track, time, openNote[2], openNote[3], length)
     }
   }
@@ -286,9 +317,9 @@ export default class Sequencer {
     this.tracks[channel].length = max - min + 1
   }
   deletePattern (channel, pattern) {
-    const start = pattern * 16 * 24
+    const start = pattern * 16
     var i
-    for (i = 0; i < (16 * 24); i++) {
+    for (i = 0; i < 16; i++) {
       this.tracks[channel].data[i + start] = null
     }
   }
@@ -296,19 +327,19 @@ export default class Sequencer {
     const [srcChannel, srcPattern] = src
     const [destChannel, destPattern] = dest
 
-    for (var i = 0; i < (16 * 26); i++) {
-      this.tracks[destChannel].data[i + (destPattern * 16 * 24)] = this.tracks[srcChannel].data[i + (srcPattern * 16 * 24)]
+    for (var i = 0; i < 16; i++) {
+      this.tracks[destChannel].data[i + (destPattern * 16)] = this.tracks[srcChannel].data[i + (srcPattern * 16)]
     }
   }
   deleteStep (channel, pattern, step) {
-    const slot = (pattern * 16 + step) * 24
+    const slot = (pattern * 16 + step)
     this.tracks[channel].data[slot] = null
   }
   // this deletes all occurences of a specific note from the whole pattern
   deleteNote (channel, pattern, note) {
-    const start = pattern * 16 * 24
+    const start = pattern * 16
     var i
-    for (i = 0; i < (16 * 24); i++) {
+    for (i = 0; i < 16; i++) {
       if (this.tracks[channel].data[i + start]) {
         const notes = this.tracks[channel].data[i + start].filter((n) => n.note !== note)
         this.tracks[channel].data[i + start] = notes
@@ -321,48 +352,37 @@ export default class Sequencer {
     return value
   }
   editParam (channel, pattern, step, drumNote, param, increment) {
-    const time = (pattern * 16 + step) * 24
+    const time = (pattern * 16 + step)
     const notes = this.tracks[channel].data[time]
     if (notes && notes.length > 0) {
       if (drumNote) {
         const foundNote = notes.find((note) => note.note === drumNote)
-        const oldParam = (foundNote[param] || PARAM_LIMITS[param][0]) / PARAM_FACTORS[param]
+        let oldParam = foundNote[param]
+        if (oldParam == null) { oldParam = PARAM_LIMITS[param][2] !== null ? PARAM_LIMITS[param][2] : PARAM_LIMITS[param][0] }
         const newParam = this.clampParamToLimits(oldParam + increment, param)
+        console.log(increment, oldParam, newParam)
         const newNotes = notes.map((note) => {
           if (note.note === drumNote) {
-            note[param] = newParam * PARAM_FACTORS[param]
+            note[param] = newParam
           }
           return note
         })
         this.tracks[channel].data[time] = newNotes
       } else {
-        const oldParam = (notes[0][param] || PARAM_LIMITS[param][0]) / PARAM_FACTORS[param]
+        let oldParam = notes[0][param]
+        if (oldParam == null) { oldParam = PARAM_LIMITS[param][2] !== null ? PARAM_LIMITS[param][2] : PARAM_LIMITS[param][0] }
         const newParam = this.clampParamToLimits(oldParam + increment, param)
+        console.log(increment, oldParam, newParam)
         const newNotes = notes.map((note) => {
-          note[param] = newParam * PARAM_FACTORS[param]
+          note[param] = newParam
           return note
         })
         this.tracks[channel].data[time] = newNotes
       }
     }
   }
-  editLength (channel, pattern, note, increment) {
-    const time = (pattern * 16 + note) * 24
-    const notes = this.tracks[channel].data[time]
-    if (notes && notes.length > 0) {
-      const originalLen = notes[0].length / 24
-      var newLen = originalLen + increment
-      if (newLen < 1) { newLen = 1 }
-      if (newLen > 64) { newLen = 64 }
-      const newNotes = notes.map((note) => {
-        note.length = newLen * 24
-        return note
-      })
-      this.tracks[channel].data[time] = newNotes
-    }
-  }
   editOctave (channel, pattern, note, increment) {
-    const time = (pattern * 16 + note) * 24
+    const time = (pattern * 16 + note)
     const notes = this.tracks[channel].data[time]
     if (notes && notes.length > 0) {
       const newNotes = notes.map((note) => {

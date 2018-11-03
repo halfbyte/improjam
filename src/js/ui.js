@@ -177,6 +177,8 @@ export default class UI {
         } else if (encoder === 1) {
           this.sequencer.editParam(this.selectedChannel, this.selectedPattern[this.selectedChannel], this.editNote, this.noteForSelectedDrum(), 'velocity', this.slowIncrement(encoder, increment, 2))
         } else if (encoder === 2) {
+          this.sequencer.editParam(this.selectedChannel, this.selectedPattern[this.selectedChannel], this.editNote, this.noteForSelectedDrum(), 'nudge', this.slowIncrement(encoder, increment, 8))
+        } else if (encoder === 3) {
           this.sequencer.editParam(this.selectedChannel, this.selectedPattern[this.selectedChannel], this.editNote, this.noteForSelectedDrum(), 'repeat', this.slowIncrement(encoder, increment, 32))
         }
       } else if (this.scaleMode) {
@@ -256,7 +258,7 @@ export default class UI {
     const track = this.sequencer.tracks[this.selectedChannel]
     // steps
     for (i = 0; i < 32; i++) {
-      if (track.data[24 * (i + (this.selectedPattern[this.selectedChannel] * 16))] && track.data[24 * (i + (this.selectedPattern[this.selectedChannel] * 16))].length > 0) {
+      if (track.data[(i + (this.selectedPattern[this.selectedChannel] * 16))] && track.data[(i + (this.selectedPattern[this.selectedChannel] * 16))].length > 0) {
         this.leds[16 + i] = COLOR_NAMES.step
       }
       const stepInPattern = this.sequencer.realStep % (this.sequencer.tracks[this.selectedChannel].length * 16)
@@ -282,8 +284,8 @@ export default class UI {
       this.leds[51] = 'off'
       this.leds[55] = 'off'
     }
-    if (this.selectedNote != null && track.data[24 * (this.selectedNote + (this.selectedPattern[this.selectedChannel] * 16))]) {
-      const notes = track.data[24 * (this.selectedNote + (this.selectedPattern[this.selectedChannel] * 16))]
+    if (this.selectedNote != null && track.data[(this.selectedNote + (this.selectedPattern[this.selectedChannel] * 16))]) {
+      const notes = track.data[(this.selectedNote + (this.selectedPattern[this.selectedChannel] * 16))]
       notes.forEach((note) => {
         const [row, pos] = this.system.scaler.rowAndPos(note.note)
         if (pos != null) {
@@ -322,7 +324,7 @@ export default class UI {
     var i
     const track = this.sequencer.tracks[this.selectedChannel]
     for (i = 0; i < 32; i++) {
-      const notes = track.data[24 * (i + (this.selectedPattern[this.selectedChannel] * 16))]
+      const notes = track.data[(i + (this.selectedPattern[this.selectedChannel] * 16))]
       if (notes != null) {
         notes.forEach((note) => {
           if (note.note === this.noteForSelectedDrum()) {
@@ -383,7 +385,7 @@ export default class UI {
         if (this.deleteMode) {
           this.sequencer.deleteNote(this.selectedChannel, this.selectedPattern[this.selectedChannel], note)
         } else if (this.selectedNote != null) {
-          const time = 24 * (this.selectedNote + (this.selectedPattern[this.selectedChannel] * 16))
+          const time = (this.selectedNote + (this.selectedPattern[this.selectedChannel] * 16))
           if (this.sequencer.toggleNote(this.selectedChannel, time, note, velocity)) {
             this.sequencer.previewNote(this.selectedChannel, note, velocity)
           }
@@ -438,7 +440,7 @@ export default class UI {
         this.sequencer.recordNoteOff(this.selectedChannel, this.noteForSelectedDrum(slot))
       }
       if (performance.now() - this.noteEditDelay < 300) {
-        const time = 24 * (index - 16 + (this.selectedPattern[this.selectedChannel] * 16))
+        const time = (index - 16 + (this.selectedPattern[this.selectedChannel] * 16))
         const note = this.noteForSelectedDrum()
         this.sequencer.toggleNote(this.selectedChannel, time, note, this.savedVelocity)
       }
