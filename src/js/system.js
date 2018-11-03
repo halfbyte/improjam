@@ -107,8 +107,9 @@ class MIDISystem extends Eventable {
     if (data[0] === 248) { }
   }
   sendChannelMessage (track, data, time) {
-    if (this.channels[track].muted) { return }
     if (this.soloChannel != null && this.soloChannel !== track) { return }
+    if (this.channels[track].muted && this.soloChannel !== track) { return }
+
     data[0] = data[0] | this.channels[track].outputChannel
     if (this.outputs[this.channels[track].outputDevice]) {
       if (time === 0) { time = performance.now() }

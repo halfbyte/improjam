@@ -48,7 +48,8 @@ export default class Sequencer {
         length: 1,
         // actual pattern data.
         data: [],
-        mode: 'note'
+        mode: 'note',
+        name: `Track ${i + 1}`
       }
     }
     return tracks

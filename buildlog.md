@@ -139,7 +139,15 @@ Did some initial design work for the web view to not look like 1992. Implemented
 - Decreased the amount of prescheduling to make the repeat function a bit more reliable. Also made repeat react to the channel pressure from push.
 - Implemented PitchBend pass through
 
+## The pattern refactoring (2018-11-03)
 
+In the beginning I designed the pattern format to be of higher resolution, so that I could, for example, record high res automation data. But working with this data structure always felt a bit cumbersome and so I decided that a step resolution would be fine. Today, I'm attempting this refactoring and with that, also introduce (for obvious reasons) a file format version and try to convert old song data accordingly.
+
+Other things I did do today:
+
+- Quickly implemented a note nudge, so that you can do more elaborate swing schemes by nudging each note individually.
+- Make Track names editable and color track headers on the display according to the mute/solo status to have a permanent display
+- Reversed the priority of mute and solo so that a soloe'd track will always play regardless of mute status.
 
 
 

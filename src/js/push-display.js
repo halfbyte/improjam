@@ -32,6 +32,18 @@ export default class PushDisplay {
     this.ctx.fillStyle = 'rgba(255,255,255,0.8)'
     this.ctx.fillText('Hello', 10, 10)
   }
+  channelBgColor (selected, muted, solo) {
+    if (selected) {
+      if (solo) { return '#ff0' }
+      if (muted) { return '#f66' }
+      return '#fff'
+    } else {
+      if (solo) { return '#860' }
+      if (muted) { return '#800' }
+      return '#444'
+    }
+  }
+
   updateDisplay () {
     const ctx = this.ctx
     // clear in a way that makes transparency work
@@ -108,17 +120,26 @@ export default class PushDisplay {
 
     ctx.fillStyle = '#ccc'
     ctx.textAlign = 'center'
+
     for (var i = 0; i < 8; i++) {
       if (this.system.matrixView && this.system.matrixView.selectedChannel === i) {
-        ctx.fillStyle = '#fff'
+        ctx.fillStyle = this.channelBgColor(true, (this.system.channels && this.system.channels[i].muted), this.system.soloChannel === i)
         ctx.fillRect(i * 120 + 5, 0, 110, 25)
         ctx.fillStyle = '#000'
-        ctx.fillText(`${i + 1}`, i * 120 + 60, 17)
+        if (this.system.sequencer && this.system.sequencer.tracks[i].name != null) {
+          ctx.fillText(`${this.system.sequencer.tracks[i].name}`, i * 120 + 60, 17)
+        } else {
+          ctx.fillText(`Track ${i + 1}`, i * 120 + 60, 17)
+        }
       } else {
-        ctx.fillStyle = '#444'
+        ctx.fillStyle = this.channelBgColor(false, (this.system.channels && this.system.channels[i].muted), this.system.soloChannel === i)
         ctx.fillRect(i * 120 + 5, 0, 110, 20)
         ctx.fillStyle = '#fff'
-        ctx.fillText(`${i + 1}`, i * 120 + 60, 17)
+        if (this.system.sequencer && this.system.sequencer.tracks[i].name != null) {
+          ctx.fillText(`${this.system.sequencer.tracks[i].name}`, i * 120 + 60, 17)
+        } else {
+          ctx.fillText(`Track ${i + 1}`, i * 120 + 60, 17)
+        }
       }
     }
 

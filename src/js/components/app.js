@@ -103,15 +103,23 @@ class Settings {
     return [
       m('div', { class: 'settings' },
         [
-          m('h2', 'Settings'),
+          m('h2', [
+            'Setttings ',
+            m('button', { onclick: () => { system.settingsOpen = false } }, 'Close')
+          ]),
           m('h3', 'Sync'),
           m(MultiSelect, { options: this.allOutputsPlusAny, nullValue: 'None', value: system.sequencer.syncOuts, onchange (val) { system.sequencer.syncOuts = val } }),
           m('h3', 'Channels'),
           m('div', system.channels.map((channel, i) => {
+            let name = `Track ${i}`
+            if (system.sequencer) {
+              name = system.sequencer.tracks[i].name || name
+            }
             return m('div', [
               // m(Select, { options: this.allOutputsPlusAny, value: channel.inputDevice, onchange (val) { channel.inputDevice = val } }),
               // m(ChannelSelector, { showAny: true, value: channel.inputChannel, onchange (val) { channel.inputChannel = val } }),
               // ' > ',
+              m('input', { value: name, onchange (e) { system.sequencer.tracks[i].name = this.value } }),
               m(Select, { options: Object.keys(system.outputs), value: channel.outputDevice, onchange (val) { channel.outputDevice = val } }),
               m(ChannelSelector, { value: channel.outputChannel, onchange (val) { channel.outputChannel = val } }),
               ' | ',
