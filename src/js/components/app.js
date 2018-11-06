@@ -123,7 +123,10 @@ class Settings {
               m(Select, { options: Object.keys(system.outputs), value: channel.outputDevice, onchange (val) { channel.outputDevice = val } }),
               m(ChannelSelector, { value: channel.outputChannel, onchange (val) { channel.outputChannel = val } }),
               ' | ',
-              m(Select, { value: channel.sequencerMode, options: ['notes', 'drums', 'drums-circuit', 'drums-volca'], onchange (val) { channel.sequencerMode = val } })
+              m(Select, { value: channel.sequencerMode, options: ['notes', 'drums', 'drums-circuit', 'drums-volca'], onchange (val) { channel.sequencerMode = val } }),
+              ' | ',
+              m(CtrlTemplateLoader, { system: system, track: i })
+
             ])
           }))
         ]
@@ -153,6 +156,32 @@ class TemplateLoader {
   load (event) {
     if (this.selectedTemplate != null) {
       this.system.loadTemplate(this.selectedTemplate)
+    }
+  }
+}
+
+class CtrlTemplateLoader {
+  constructor (vnode) {
+    this.selectedTemplate = null
+    this.system = vnode.attrs.system
+    this.track = vnode.attrs.track
+  }
+  view (vnode) {
+    if (vnode.attrs.system.availableCtrlTemplates != null) {
+      this.selectedTemplate = this.selectedTemplate || vnode.attrs.system.availableCtrlTemplates[0]
+    }
+    const tmpl = vnode.attrs.system.availableCtrlTemplates
+    return [
+      m('label', [
+        'Ctrl-Templates: ',
+        m(Select, { onchange: (val) => { this.selectedTemplate = val }, options: tmpl, value: this.selectedTemplate })
+      ]),
+      m('button', { onclick: this.load.bind(this) }, 'Load')
+    ]
+  }
+  load (event) {
+    if (this.selectedTemplate != null) {
+      this.system.loadCtrlTemplate(this.track, this.selectedTemplate)
     }
   }
 }

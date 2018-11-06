@@ -1,0 +1,10 @@
+[
+  { "name": "Cutoff", "cc": "49" },
+  { "name": "Resonance", "cc": "48" },
+  { "name": "Flt Att", "cc": "59" },
+  { "name": "Flt Dec", "cc": "58" },
+  { "name": "Flt Env Amt", "cc": "52" },
+  { "name": "Amp Att", "cc": "61" },
+  { "name": "Amp Dec", "cc": "60" },
+  { "name": "OSC A Wave", "cc": "79" }
+]

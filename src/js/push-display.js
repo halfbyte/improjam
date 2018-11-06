@@ -1,5 +1,4 @@
 /* global Worker */
-import CONTROLLER_NAMES from './controller-names.js'
 const { initPush, sendFrame } = require('ableton-push-canvas-display')
 
 const STANDARD_FONT = "16px 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
@@ -105,16 +104,15 @@ export default class PushDisplay {
     } else if (this.system.matrixView && this.system.matrixView.controllerMode) {
       for (var slot = 0; slot < 8; slot++) {
         const slotValue = this.system.channels[this.system.matrixView.selectedChannel].controlSlots[slot]
-        const channel = this.system.channels[this.system.matrixView.selectedChannel].outputChannel
+        const channel = this.system.channels[this.system.matrixView.selectedChannel] // .outputChannel
+        const ctrlName = this.system.channels[this.system.matrixView.selectedChannel].ctrlConfig[slot].name
         const width = slotValue / 127.0 * 110
         ctx.fillStyle = '#ccc'
         ctx.fillRect(5 + (120 * slot), 30, width, 20)
         ctx.textAlign = 'center'
         ctx.fillStyle = '#fff'
         ctx.fillText(`${slotValue}`, 120 * slot + 60, 47)
-        if (CONTROLLER_NAMES[channel][slot]) {
-          ctx.fillText(`${CONTROLLER_NAMES[channel][slot]}`, 120 * slot + 60, 67)
-        }
+        ctx.fillText(ctrlName, 120 * slot + 60, 67)
       }
     }
 

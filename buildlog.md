@@ -150,7 +150,27 @@ Other things I did do today:
 - Reversed the priority of mute and solo so that a soloe'd track will always play regardless of mute status.
 - Move Notes across the grid. This is not as fluent as it could be (you can only move the notes one step at a time), but it's good enough for fixing the usual "recorded note is a step too late" problem.
 
+## Controller Templates (2018-11-05)
 
+Holy crap, only 4 days until the next performance. One thing I really wanted to have from the beginning is more flexibility in assigning the controller knobs. The first step into that direction is a mechanism to load controller templates into channels. The templates are simple JSON files containing a simple definition:
+
+```json
+[
+  { "name": "Cutoff", "cc": "49" },
+  { "name": "Resonance", "cc": "48" },
+  { "name": "Flt Att", "cc": "59" },
+  { "name": "Flt Dec", "cc": "58" },
+  { "name": "Flt Env Amt", "cc": "52" },
+  { "name": "Amp Att", "cc": "61" },
+  { "name": "Amp Dec", "cc": "60" },
+  { "name": "OSC A Wave", "cc": "79" }
+]
+```
+
+In the long term I want to have two more things:
+
+- Automation Recording
+- Pageable Controllers (so that you can have more than 8 controllers per channel)
 
 
 

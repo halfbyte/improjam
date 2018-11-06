@@ -109,6 +109,7 @@ body {
   z-index: 2;
   padding: 20px;
   box-sizing: border-box;
+  color: #111;
 }
 
 .settings h2, .settings h3 {

@@ -44,8 +44,10 @@ class MIDISystem extends Eventable {
     this.matrixView = this.ui
     this.soloChannel = null
     this.availableTemplates = []
+    this.availableCtrlTemplates = []
 
     this.listTemplates()
+    this.listCtrlTemplates()
     this.loadLastSong()
     this.initPushState()
     this.settingsOpen = false
@@ -107,6 +109,7 @@ class MIDISystem extends Eventable {
     if (data[0] === 248) { }
   }
   sendChannelMessage (track, data, time) {
+    console.log('CHMSG', track, data, time)
     if (this.soloChannel != null && this.soloChannel !== track) { return }
     if (this.channels[track].muted && this.soloChannel !== track) { return }
 
@@ -123,7 +126,16 @@ class MIDISystem extends Eventable {
     if (newValue < 0) { newValue = 0 }
     if (oldValue !== newValue) {
       this.channels[channel].controlSlots[slot] = newValue
-      this.sendChannelMessage(channel, [0xb0, slot + 71, newValue], 0)
+      const cfg = this.channels[channel].ctrlConfig[slot]
+      if (cfg.cc != null) {
+        this.sendChannelMessage(channel, [0xb0, cfg.cc, newValue], 0)
+      }
+      if (cfg.nrpn != null) {
+        const [msb, lsb] = cfg.nrpn
+        this.sendChannelMessage(channel, [0xb0, 99, msb], 0)
+        this.sendChannelMessage(channel, [0xb0, 98, lsb], 0)
+        this.sendChannelMessage(channel, [0xb0, 6, newValue], 0)
+      }
     }
   }
   sendSync (output, time) {
@@ -287,6 +299,42 @@ class MIDISystem extends Eventable {
         this.availableTemplates.push(baseName)
       })
       m.redraw()
+    })
+  }
+
+  listCtrlTemplates () {
+    const { app } = require('electron').remote
+    const path = require('path')
+    const appPath = app.getAppPath()
+    const fs = require('fs')
+    const fullPath = path.join(appPath, 'ctrl_templates')
+    this.availableTemplates = []
+    fs.readdir(fullPath, (err, files) => {
+      if (err) { console.log('Error reading templates', err) }
+      files.forEach(file => {
+        const baseName = path.basename(file, '.json')
+        this.availableCtrlTemplates.push(baseName)
+      })
+      m.redraw()
+    })
+  }
+
+  loadCtrlTemplate (track, templateName) {
+    const { app } = require('electron').remote
+    const path = require('path')
+    const appPath = app.getAppPath()
+    const fs = require('fs')
+    const fullPath = path.join(appPath, 'ctrl_templates', `${templateName}.json`)
+    console.log('Loading ctrl_template from: ', fullPath)
+
+    fs.readFile(fullPath, 'utf8', (err, data) => {
+      if (err) {
+        dialogs.alert(`Error loading template: ${err}`)
+      } else {
+        const parsed = JSON.parse(data)
+        this.channels[track].ctrlConfig = parsed
+        m.redraw()
+      }
     })
   }
 

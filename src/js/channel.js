@@ -3,11 +3,23 @@
 const m = require('mithril')
 const ANY = -1
 
+const DEFAULT_CTRL_CONFIG = [
+  { 'name': 'Ctrl 1', 'cc': '71' },
+  { 'name': 'Ctrl 2', 'cc': '72' },
+  { 'name': 'Ctrl 3', 'cc': '73' },
+  { 'name': 'Ctrl 4', 'cc': '74' },
+  { 'name': 'Ctrl 5', 'cc': '75' },
+  { 'name': 'Ctrl 6', 'cc': '76' },
+  { 'name': 'Ctrl 7', 'cc': '77' },
+  { 'name': 'Ctrl 8', 'cc': '78' }
+]
+
 const DEFAULT_CHANNEL_CONFIG = {
   inputDevice: ANY,
   outputChannel: 0,
   inputChannel: ANY,
-  sequencerMode: 'notes'
+  sequencerMode: 'notes',
+  ctrlConfig: DEFAULT_CTRL_CONFIG
 }
 
 export default class Channel {
@@ -43,6 +55,7 @@ export default class Channel {
     this.inputChannel = config.inputChannel || DEFAULT_CHANNEL_CONFIG.inputChannel
     this.outputChannel = config.outputChannel || DEFAULT_CHANNEL_CONFIG.outputChannel
     this.sequencerMode = config.sequencerMode || DEFAULT_CHANNEL_CONFIG.sequencerMode
+    this.ctrlConfig = config.ctrlConfig || DEFAULT_CHANNEL_CONFIG.ctrlConfig
     this.muted = !!config.muted
     this.attachListeners()
     m.redraw()
@@ -54,6 +67,7 @@ export default class Channel {
       inputChannel: this.inputChannel,
       outputChannel: this.outputChannel,
       sequencerMode: this.sequencerMode,
+      ctrlConfig: this.ctrlConfig,
       muted: this.muted
     }
   }
