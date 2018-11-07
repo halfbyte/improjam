@@ -124,8 +124,8 @@ export default class PushDisplay {
         ctx.fillStyle = this.channelBgColor(true, (this.system.channels && this.system.channels[i].muted), this.system.soloChannel === i)
         ctx.fillRect(i * 120 + 5, 0, 110, 25)
         ctx.fillStyle = '#000'
-        if (this.system.sequencer && this.system.sequencer.tracks[i].name != null) {
-          ctx.fillText(`${this.system.sequencer.tracks[i].name}`, i * 120 + 60, 17)
+        if (this.system.sequencer && this.system.channels[i].name != null) {
+          ctx.fillText(`${this.system.channels[i].name}`, i * 120 + 60, 17)
         } else {
           ctx.fillText(`Track ${i + 1}`, i * 120 + 60, 17)
         }
@@ -133,8 +133,8 @@ export default class PushDisplay {
         ctx.fillStyle = this.channelBgColor(false, (this.system.channels && this.system.channels[i].muted), this.system.soloChannel === i)
         ctx.fillRect(i * 120 + 5, 0, 110, 20)
         ctx.fillStyle = '#fff'
-        if (this.system.sequencer && this.system.sequencer.tracks[i].name != null) {
-          ctx.fillText(`${this.system.sequencer.tracks[i].name}`, i * 120 + 60, 17)
+        if (this.system.sequencer && this.system.channels[i].name != null) {
+          ctx.fillText(`${this.system.channels[i].name}`, i * 120 + 60, 17)
         } else {
           ctx.fillText(`Track ${i + 1}`, i * 120 + 60, 17)
         }

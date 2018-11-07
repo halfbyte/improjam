@@ -111,15 +111,15 @@ class Settings {
           m(MultiSelect, { options: this.allOutputsPlusAny, nullValue: 'None', value: system.sequencer.syncOuts, onchange (val) { system.sequencer.syncOuts = val } }),
           m('h3', 'Channels'),
           m('div', system.channels.map((channel, i) => {
-            let name = `Track ${i}`
+            let name = `Track ${i + 1}`
             if (system.sequencer) {
-              name = system.sequencer.tracks[i].name || name
+              name = system.channels[i].name || name
             }
             return m('div', [
               // m(Select, { options: this.allOutputsPlusAny, value: channel.inputDevice, onchange (val) { channel.inputDevice = val } }),
               // m(ChannelSelector, { showAny: true, value: channel.inputChannel, onchange (val) { channel.inputChannel = val } }),
               // ' > ',
-              m('input', { value: name, onchange (e) { system.sequencer.tracks[i].name = this.value } }),
+              m('input', { value: name, onchange (e) { system.channels[i].name = this.value } }),
               m(Select, { options: Object.keys(system.outputs), value: channel.outputDevice, onchange (val) { channel.outputDevice = val } }),
               m(ChannelSelector, { value: channel.outputChannel, onchange (val) { channel.outputChannel = val } }),
               ' | ',

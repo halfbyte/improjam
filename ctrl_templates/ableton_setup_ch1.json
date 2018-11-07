@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Reverb",
+    "cc": 71
+  },
+  {
+    "name": "Echo",
+    "cc": 72
+  },
+  {
+    "name": "Filter",
+    "cc": 73
+  },
+  {
+    "name": "Ctrl 4",
+    "cc": 74
+  },
+  {
+    "name": "Ctrl 5",
+    "cc": 75
+  },
+  {
+    "name": "Track Vol",
+    "cc": 76
+  },
+  {
+    "name": "Send REV",
+    "cc": 77
+  },
+  {
+    "name": "Send DEL",
+    "cc": 78
+  }
+]

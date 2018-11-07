@@ -58,6 +58,7 @@ export default class Channel {
     this.ctrlConfig = config.ctrlConfig || DEFAULT_CHANNEL_CONFIG.ctrlConfig
     this.muted = !!config.muted
     this.attachListeners()
+    this.name = config.name
     m.redraw()
   }
   getConfig () {
@@ -68,7 +69,8 @@ export default class Channel {
       outputChannel: this.outputChannel,
       sequencerMode: this.sequencerMode,
       ctrlConfig: this.ctrlConfig,
-      muted: this.muted
+      muted: this.muted,
+      name: this.name
     }
   }
 }

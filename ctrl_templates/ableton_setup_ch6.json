@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Filter",
+    "cc": 71
+  },
+  {
+    "name": "Reso",
+    "cc": 72
+  },
+  {
+    "name": "SAW > SQ",
+    "cc": 73
+  },
+  {
+    "name": "Mod",
+    "cc": 74
+  },
+  {
+    "name": "Mod T",
+    "cc": 75
+  },
+  {
+    "name": "Track Vol",
+    "cc": 76
+  },
+  {
+    "name": "Send REV",
+    "cc": 77
+  },
+  {
+    "name": "Send DEL",
+    "cc": 78
+  }
+]

@@ -61,7 +61,7 @@ class MIDISystem extends Eventable {
     let i
     this.channels = []
     for (i = 0; i < NUM_CHANNELS; i++) {
-      this.channels[i] = new Channel({}, this)
+      this.channels[i] = new Channel({name: `Track ${i + 1}`}, this)
     }
   }
 
@@ -165,14 +165,10 @@ class MIDISystem extends Eventable {
     const fullPath = path.join(dir, `${templateName}.json`)
     // gather data
     const data = {
-      patterns: this.sequencer.tracks,
       channels: this.channels.map((ch) => ch.getConfig()),
       scaler: this.scaler.getConfig(),
       settings: {
-        tempo: this.sequencer.tempo,
-        swing: this.sequencer.swing,
         syncOuts: this.sequencer.syncOuts,
-        accent: this.matrixView.accent
       }
     }
     // write config
