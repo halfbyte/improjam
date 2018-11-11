@@ -10,6 +10,8 @@ import UI from './ui.js'
 
 const dialogs = require('dialogs')()
 
+const link = require('abletonlink')()
+
 const FILE_FILTER = [
   { name: 'Improjam File', extensions: ['improjam'] }
 ]
@@ -45,6 +47,7 @@ class MIDISystem extends Eventable {
     this.soloChannel = null
     this.availableTemplates = []
     this.availableCtrlTemplates = []
+    this.useLink = false
 
     this.listTemplates()
     this.listCtrlTemplates()
@@ -97,6 +100,8 @@ class MIDISystem extends Eventable {
         this.startSaveTemplate()
       }
     })
+    ipcRenderer.on('chose-open-file', (event, path) => this.loadSong(path))
+    ipcRenderer.on('chose-save-file', (event, path) => this.saveSong(path))
   }
   setupDeviceListener (device) {
     device.onmidimessage = this.onMIDIMessage
@@ -148,9 +153,29 @@ class MIDISystem extends Eventable {
     this.outputs[output] != null && this.outputs[output] != null && this.outputs[output].send([0xFC], time)
   }
 
+  setLinkStatus(val) {
+    this.useLink = val
+    if (this.useLink === true) {
+      this.startLink()
+    } else {
+      this.stopLink()
+    }
+  }
+
+  startLink() {
+    link.startUpdate(20, (beat, phase, bpm) => {
+      console.log("updated", beat, phase, bpm)
+    })    
+  }
+
+  stopLink() {
+    link.stopUpdate()
+  }
+
   startSaveTemplate () {
     dialogs.prompt('Save Template', this.currentTemplate, this.saveTemplate.bind(this))
   }
+
 
   saveTemplate (templateName) {
     if (templateName == null) { return }
@@ -190,11 +215,7 @@ class MIDISystem extends Eventable {
   }
 
   saveAs () {
-    const { dialog } = require('electron').remote
-    const path = dialog.showSaveDialog({ filters: FILE_FILTER, properties: ['openFile'], title: 'Save Improjam Song' })
-    if (path) {
-      this.saveSong(path)
-    }
+    ipcRenderer.send('save-file');
   }
 
   // TODO: Implement a real save.
@@ -238,11 +259,7 @@ class MIDISystem extends Eventable {
   }
 
   loadAs () {
-    const { dialog } = require('electron').remote
-    const paths = dialog.showOpenDialog({ filters: FILE_FILTER, properties: ['openFile'], title: 'Open Improjam Song' })
-    if (paths) {
-      this.loadSong(paths[0])
-    }
+    ipcRenderer.send('open-file')
   }
 
   loadSong (path) {

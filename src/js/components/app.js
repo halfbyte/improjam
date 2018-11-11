@@ -206,6 +206,10 @@ export default class App {
       m('h1', `improjam V${this.version}`),
       m(TemplateLoader, { system: system }),
       m(Settings, { system: system, open: system.settingsOpen }),
+      m('label', [
+        m('input', {type: 'checkbox', value: 1, checked: system.useLink, onchange: (event) => { this.system.setLinkStatus(event.target.checked)}}),
+        ' Use Link'
+      ]),
       m('div', { class: 'cf' }, m('div', { class: 'matrix' }, m(Matrix, { matrixView: vnode.attrs.system.matrixView }))),
 
       m('h2', 'Scale'),

@@ -4,7 +4,7 @@ const menu = require('./src/js/electron/menu')
 
 // Modules to control application life and create native browser window
 const path = require('path')
-const { app, BrowserWindow, protocol, Menu } = require('electron')
+const { app, BrowserWindow, protocol, Menu, ipcMain, dialog } = require('electron')
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 
@@ -14,6 +14,11 @@ let mainWindow
 
 const base = app.getAppPath()
 const scheme = 'app'
+
+const FILE_FILTER = [
+  { name: 'Improjam File', extensions: ['improjam'] }
+]
+
 // Create the protocol
 const srcPath = path.join(base, 'src')
 require('./src/js/electron/create-protocol')(scheme, srcPath)
@@ -68,3 +73,19 @@ app.on('activate', function () {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
+
+ipcMain.on('save-file', function(event) {
+  dialog.showSaveDialog({ filters: FILE_FILTER, properties: ['openFile'], title: 'Save Improjam Song' }, function(path) {
+    if (path != null) {
+      event.sender.send('chose-save-file', path)
+    }
+  })
+})
+
+ipcMain.on('open-file', function(event) {
+  dialog.showOpenDialog({ filters: FILE_FILTER, properties: ['openFile'], title: 'Open Improjam Song' }, function(paths) {
+    if (paths != null) {
+      event.sender.send('chose-open-file', paths[0])
+    }
+  })
+})
