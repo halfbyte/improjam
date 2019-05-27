@@ -100,6 +100,7 @@ class Settings {
     if (!system.settingsOpen) { return [] }
     this.allOutputs = Object.keys(system.outputs)
     this.allOutputsPlusAny = [-1].concat(this.allOutputs)
+    this.allInputs = Object.keys(system.inputs)
     return [
       m('div', { class: 'settings' },
         [
@@ -107,7 +108,20 @@ class Settings {
             'Setttings ',
             m('button', { onclick: () => { system.settingsOpen = false } }, 'Close')
           ]),
-          m('h3', 'Sync'),
+
+          m('h3', [
+            m('label', [
+              m('input', { type: 'radio', name: 'syncMode', value: 'sync-in', checked: system.syncMode === 'sync-in' }),
+              'Sync In'
+            ])
+          ]),
+          m(Select, { options: this.allInputs, value: system.sequencer.syncIn, onchange (val) { system.sequencer.syncIn = val } }),
+          m('h3', [
+            m('label', [
+              m('input', { type: 'radio', name: 'syncMode', value: 'sync-out', checked: system.syncMode === 'sync-out' }),
+              'Sync Out'
+            ])
+          ]),
           m(MultiSelect, { options: this.allOutputsPlusAny, nullValue: 'None', value: system.sequencer.syncOuts, onchange (val) { system.sequencer.syncOuts = val } }),
           m('h3', 'Channels'),
           m('div', system.channels.map((channel, i) => {
@@ -207,7 +221,7 @@ export default class App {
       m(TemplateLoader, { system: system }),
       m(Settings, { system: system, open: system.settingsOpen }),
       m('label', [
-        m('input', {type: 'checkbox', value: 1, checked: system.useLink, onchange: (event) => { this.system.setLinkStatus(event.target.checked)}}),
+        m('input', { type: 'checkbox', value: 1, checked: system.useLink, onchange: (event) => { this.system.setLinkStatus(event.target.checked) } }),
         ' Use Link'
       ]),
       m('div', { class: 'cf' }, m('div', { class: 'matrix' }, m(Matrix, { matrixView: vnode.attrs.system.matrixView }))),

@@ -48,7 +48,7 @@ class MIDISystem extends Eventable {
     this.availableTemplates = []
     this.availableCtrlTemplates = []
     this.useLink = false
-
+    this.syncMode = 'sync-out'
     this.listTemplates()
     this.listCtrlTemplates()
     this.loadLastSong()
@@ -64,7 +64,7 @@ class MIDISystem extends Eventable {
     let i
     this.channels = []
     for (i = 0; i < NUM_CHANNELS; i++) {
-      this.channels[i] = new Channel({name: `Track ${i + 1}`}, this)
+      this.channels[i] = new Channel({ name: `Track ${i + 1}` }, this)
     }
   }
 
@@ -153,7 +153,7 @@ class MIDISystem extends Eventable {
     this.outputs[output] != null && this.outputs[output] != null && this.outputs[output].send([0xFC], time)
   }
 
-  setLinkStatus(val) {
+  setLinkStatus (val) {
     this.useLink = val
     if (this.useLink === true) {
       this.startLink()
@@ -162,20 +162,19 @@ class MIDISystem extends Eventable {
     }
   }
 
-  startLink() {
+  startLink () {
     link.startUpdate(20, (beat, phase, bpm) => {
-      console.log("updated", beat, phase, bpm)
-    })    
+      console.log('updated', beat, phase, bpm)
+    })
   }
 
-  stopLink() {
+  stopLink () {
     link.stopUpdate()
   }
 
   startSaveTemplate () {
     dialogs.prompt('Save Template', this.currentTemplate, this.saveTemplate.bind(this))
   }
-
 
   saveTemplate (templateName) {
     if (templateName == null) { return }
@@ -193,7 +192,7 @@ class MIDISystem extends Eventable {
       channels: this.channels.map((ch) => ch.getConfig()),
       scaler: this.scaler.getConfig(),
       settings: {
-        syncOuts: this.sequencer.syncOuts,
+        syncOuts: this.sequencer.syncOuts
       }
     }
     // write config
@@ -215,7 +214,7 @@ class MIDISystem extends Eventable {
   }
 
   saveAs () {
-    ipcRenderer.send('save-file');
+    ipcRenderer.send('save-file')
   }
 
   // TODO: Implement a real save.
