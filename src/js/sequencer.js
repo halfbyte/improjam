@@ -1,4 +1,6 @@
 /* eslint-env browser */
+import TempoMatcher from './tempo-matcher.js'
+
 const m = require('mithril')
 
 // MIN, MAX, [DEFAULT]
@@ -11,7 +13,7 @@ const PARAM_LIMITS = {
 
 const SWING_LIMIT = 36
 
-const STEPS_TO_SCHEDULE = 24
+const TICKS_TO_SCHEDULE = 6
 
 export default class Sequencer {
   constructor (system, numChannels) {
@@ -19,6 +21,8 @@ export default class Sequencer {
     this.system = system
     this.clearTracks()
     this.tempo = 120
+    this.realTempo = this.tempo
+    this.tempoMatcher = new TempoMatcher(this.tempo)
     this.swing = 0
     this.playing = false
     this.scheduleNextNotes = this.scheduleNextNotes.bind(this)
@@ -30,6 +34,8 @@ export default class Sequencer {
     this.openNotes = []
     this.openRepeatNotes = []
     this.syncOuts = []
+    this.syncIn = null
+    this.syncMode = 'sync-out'
     this.nextTime = performance.now()
     this.tick = 0
     this.scheduleNextNotes()
@@ -48,7 +54,7 @@ export default class Sequencer {
         length: 1,
         // actual pattern data.
         data: [],
-        mode: 'note',
+        mode: 'note'
       }
     }
     return tracks
@@ -93,6 +99,21 @@ export default class Sequencer {
     this.playing = false
     this.syncOuts.forEach((so) => this.system.sendStop(so, this.nextTime))
   }
+  midiStart (source) {
+    if (source === this.syncIn && this.syncMode === 'sync-in') {
+      this.start()
+    }
+  }
+  midiStop (source) {
+    if (source === this.syncIn && this.syncMode === 'sync-in') {
+      this.stop()
+    }
+  }
+  midiTick (source) {
+    if (source === this.syncIn && this.syncMode === 'sync-in') {
+      this.advanceTick()
+    }
+  }
   playPause () {
     if (this.playing) {
       this.stop()
@@ -107,20 +128,45 @@ export default class Sequencer {
     const tick = ((step) % trackLength) + trackOffset
     return track.data[tick]
   }
+
+  // This is for external sync
+  advanceTick () {
+    const currentTime = performance.now()
+    this.tempoMatcher.next(currentTime)
+    this.realTempo = this.tempoMatcher.tempo
+    if (this.playing) {
+      this.realTick = this.tick
+      this.realStep = Math.floor(this.realTick / 6)
+      if (this.realStep !== this.oldRealStep) {
+        m.redraw()
+        this.oldRealStep = this.realStep
+      }
+    } else {
+      this.realStep = 0
+      if (this.realStep !== this.oldRealStep) {
+        m.redraw()
+        this.oldRealStep = this.realStep
+      }
+    }
+    this.nextTick(currentTime)
+  }
+  // This is for internal sync
   scheduleNextNotes () {
-    let i, t
-    const numTracks = this.tracks.length
+    if (this.syncMode == 'sync-in') { return }
+    this.realTempo = this.tempo
+    let i
     const currentTime = performance.now()
 
-    const perTick = 60 / (this.tempo * 24 * 4) * 1000
+    const perTick = 60 / (this.realTempo * 24) * 1000
 
+    // Display "real tick"
     const diff = (this.nextTime - currentTime) / perTick
 
     if (this.playing) {
       var realTick = Math.floor(this.tick - diff)
-      if (realTick < 0) { realTick = 256 * 24 + realTick }
+      if (realTick < 0) { realTick = 256 * 6 + realTick }
       this.realTick = realTick
-      this.realStep = Math.floor(realTick / 24)
+      this.realStep = Math.floor(realTick / 6)
       if (this.realStep !== this.oldRealStep) {
         m.redraw()
         this.oldRealStep = this.realStep
@@ -133,58 +179,67 @@ export default class Sequencer {
       }
     }
 
+    // Actual scheduling
     if (currentTime > this.nextTime - (perTick * 4)) {
-      for (i = 0; i < STEPS_TO_SCHEDULE; i++) {
-        if (i % 4 === 0) {
-          this.sendTick(this.nextTime + (perTick * (i)))
-        }
-        var swingOff = 0
-        if ((this.tick + i) % 48 === 24) {
-          swingOff = this.swing / 2.0
-        }
-        const straightTime = this.nextTime + (perTick * i)
-        const time = this.nextTime + (perTick * (i + swingOff))
-        if (this.repeat != null && (this.tick + i) % this.repeat.repeat === 0) {
-          this.openRepeatNotes.forEach((noteConfig) => {
-            const [channel, note, velocity] = noteConfig
-            if (channel === this.repeat.channel) {
-              // make sure only 16th notes swing on repeat
-              const myTime = this.repeat.repeat === 24 ? time : straightTime
-              this.sendNote(channel, myTime, note, velocity, this.repeat.repeat, null, perTick)
-            }
-          })
-        }
-
-        if (this.playing) {
-          for (t = 0; t < numTracks; t++) {
-            const track = this.tracks[t]
-            const trackOffset = track.firstPattern * (16 * 24)
-            const trackLength = track.length * 16 * 24
-            const tick = ((this.tick + i) % trackLength) + trackOffset
-            if (tick % 24 === 0) {
-              const step = tick / 24
-              if (track.data[step]) {
-                track.data[step].forEach((event) => {
-                  if (event.type === 'note') {
-                    let nudgeTime = 0
-                    if (event.nudge != null) {
-                      nudgeTime = (event.nudge * perTick)
-                    }
-                    this.sendNote(t, time + nudgeTime, event.note, event.velocity, event.length, event.repeat, perTick)
-                  }
-                })
-              }
-            }
-          }
-        }
+      for (i = 0; i < TICKS_TO_SCHEDULE; i++) {
+        // Send MIDI sync
+        this.nextTick(this.nextTime + (perTick * (i)))
       }
-      this.tick += i
       this.nextTime += (perTick * i)
-      if (this.tick >= (256 * 24)) { this.tick = 0 }
     }
     this.tickWorker.postMessage('request-tick')
     // setTimeout(this.scheduleNextNotes, 10)
   }
+
+  nextTick (straightTime) {
+    const numTracks = this.tracks.length
+    const perTick = 60 / (this.realTempo * 24) * 1000
+    this.sendTick(straightTime)
+
+    var swingOff = 0
+    if (this.tick % 12 === 6) {
+      swingOff = this.swing / 2.0
+    }
+    // The actual start time for the current step
+    const time = straightTime + (perTick * swingOff)
+    // Repeat notes
+    if (this.repeat != null && (this.tick) % this.repeat.repeat === 0) {
+      this.openRepeatNotes.forEach((noteConfig) => {
+        const [channel, note, velocity] = noteConfig
+        if (channel === this.repeat.channel) {
+          // make sure only 16th notes swing on repeat
+          const myTime = this.repeat.repeat === 6 ? time : straightTime
+          this.sendNote(channel, myTime, note, velocity, this.repeat.repeat, null, perTick)
+        }
+      })
+    }
+
+    if (this.playing) {
+      for (let t = 0; t < numTracks; t++) {
+        const track = this.tracks[t]
+        const trackOffset = track.firstPattern * (16 * 6)
+        const trackLength = track.length * 16 * 6
+        const tick = ((this.tick) % trackLength) + trackOffset
+        if (tick % 6 === 0) {
+          const step = tick / 6
+          if (track.data[step]) {
+            track.data[step].forEach((event) => {
+              if (event.type === 'note') {
+                let nudgeTime = 0
+                if (event.nudge != null) {
+                  nudgeTime = (event.nudge * perTick)
+                }
+                this.sendNote(t, time + nudgeTime, event.note, event.velocity, event.length, event.repeat, perTick)
+              }
+            })
+          }
+        }
+      }
+    }
+    this.tick++
+    if (this.tick >= (256 * 24)) { this.tick = 0 }
+  }
+
   sendTick (time) {
     this.syncOuts.forEach((so) => this.system.sendSync(so, time))
   }
@@ -198,10 +253,10 @@ export default class Sequencer {
       this.system.sendChannelMessage(
         track,
         [128, note, velocity],
-        time + (length * 24 * perTick)
+        time + (length * 6 * perTick)
       )
     } else {
-      const stepLen = 24 * perTick / repeat
+      const stepLen = 6 * perTick / repeat
       const steps = length * repeat
       for (var i = 0; i < steps; i++) {
         this.system.sendChannelMessage(

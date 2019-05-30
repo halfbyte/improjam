@@ -48,7 +48,6 @@ class MIDISystem extends Eventable {
     this.availableTemplates = []
     this.availableCtrlTemplates = []
     this.useLink = false
-    this.syncMode = 'sync-out'
     this.listTemplates()
     this.listCtrlTemplates()
     this.loadLastSong()
@@ -107,6 +106,17 @@ class MIDISystem extends Eventable {
     device.onmidimessage = this.onMIDIMessage
   }
   onMIDIMessage (event) {
+    if (event.data.length === 1) {
+      if (event.data[0] === 0xF8) {
+        this.sequencer.midiTick(event.target.name)
+      }
+      if (event.data[0] === 0xFA) {
+        this.sequencer.midiStart(event.target.name)
+      }
+      if (event.data[0] === 0xFC) {
+        this.sequencer.midiStop(event.target.name)
+      }
+    }
     this.trigger('all-devices-message', event.data, event.target.name)
     this.trigger(`device-message.${event.target.name}`, event.data, event.target.name)
   }
@@ -192,7 +202,9 @@ class MIDISystem extends Eventable {
       channels: this.channels.map((ch) => ch.getConfig()),
       scaler: this.scaler.getConfig(),
       settings: {
-        syncOuts: this.sequencer.syncOuts
+        syncOuts: this.sequencer.syncOuts,
+        syncIn: this.sequencer.syncIn,
+        syncMode: this.sequencer.syncMode
       }
     }
     // write config
@@ -370,6 +382,8 @@ class MIDISystem extends Eventable {
         }
         if (parsed.settings) {
           this.sequencer.syncOuts = parsed.settings.syncOuts || []
+          this.sequencer.syncIn = parsed.settings.syncIn
+          this.sequencer.syncMode = parsed.settings.syncMode || 'sync-out'
         }
         this.currentTemplate = templateName
         m.redraw()

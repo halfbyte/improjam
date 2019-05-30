@@ -65,7 +65,7 @@ export default class PushDisplay {
       ctx.font = STANDARD_FONT
       ctx.textAlign = 'start'
       ctx.fillText(`Step: ${this.system.sequencer.realStep}`, 10, 150)
-      ctx.fillText(`Tempo: ${this.system.sequencer.tempo}`, 250, 150)
+      ctx.fillText(`Tempo: ${Math.round(this.system.sequencer.realTempo, 2)}`, 250, 150)
       ctx.fillText(`Swing: ${this.system.sequencer.swing}`, 370, 150)
     }
     if (this.system.scaler) {

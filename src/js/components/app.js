@@ -101,6 +101,7 @@ class Settings {
     this.allOutputs = Object.keys(system.outputs)
     this.allOutputsPlusAny = [-1].concat(this.allOutputs)
     this.allInputs = Object.keys(system.inputs)
+    this.allInputsPlusAny = [-1].concat(this.allInputs)
     return [
       m('div', { class: 'settings' },
         [
@@ -111,14 +112,14 @@ class Settings {
 
           m('h3', [
             m('label', [
-              m('input', { type: 'radio', name: 'syncMode', value: 'sync-in', checked: system.syncMode === 'sync-in' }),
+              m('input', { onclick: () => { system.sequencer.syncMode = 'sync-in'; system.sequencer.tempoMatcher.reset() }, type: 'radio', name: 'syncMode', value: 'sync-in', checked: system.sequencer.syncMode === 'sync-in' }),
               'Sync In'
             ])
           ]),
-          m(Select, { options: this.allInputs, value: system.sequencer.syncIn, onchange (val) { system.sequencer.syncIn = val } }),
+          m(Select, { options: this.allInputsPlusAny, value: system.sequencer.syncIn, nullValue: 'None', onchange (val) { system.sequencer.syncIn = val } }),
           m('h3', [
             m('label', [
-              m('input', { type: 'radio', name: 'syncMode', value: 'sync-out', checked: system.syncMode === 'sync-out' }),
+              m('input', { onclick: () => { system.sequencer.syncMode = 'sync-out'; system.sequencer.tempoMatcher.reset() }, type: 'radio', name: 'syncMode', value: 'sync-out', checked: system.sequencer.syncMode === 'sync-out' }),
               'Sync Out'
             ])
           ]),
@@ -225,6 +226,12 @@ export default class App {
         ' Use Link'
       ]),
       m('div', { class: 'cf' }, m('div', { class: 'matrix' }, m(Matrix, { matrixView: vnode.attrs.system.matrixView }))),
+
+      m('div', [
+        m('button', { onclick: () => { this.system.sequencer.start() } }, 'Play'),
+        m('button', { onclick: () => { this.system.sequencer.stop() } }, 'Stop')
+
+      ]),
 
       m('h2', 'Scale'),
       m('div', [
