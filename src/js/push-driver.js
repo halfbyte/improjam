@@ -293,7 +293,6 @@ export default class PushDriver extends Eventable {
     this.setFunctionLeds([[89, [0, on ? (recording ? COLORS.red : COLORS.green) : COLORS['dark-grey']]]])
   }
   setCursorKeysHorizontal (on) {
-    console.log(on)
     const color = on ? COLORS.white : COLORS['dark-grey']
     this.setFunctionLeds([[44, [0, color]], [45, [0, color]]])
   }

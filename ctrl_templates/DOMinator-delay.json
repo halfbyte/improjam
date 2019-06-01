@@ -1,0 +1,37 @@
+[
+  {
+    "name": "---",
+    "cc": 1
+  },
+  {
+    "name": "Feedback",
+    "cc": 2
+  },
+  {
+    "name": "---",
+    "cc": 75
+  },
+  {
+    "name": "BitCount",
+    "cc": 5,
+    "channel": 14
+  },
+  {
+    "name": "BitRate",
+    "cc": 6,
+    "channel": 14
+  },
+  {
+    "name": "---",
+    "cc": 75
+  },
+  {
+    "name": "---",
+    "cc": 75
+  },
+  {
+    "name": "Filter",
+    "cc": 4,
+    "channel": 14
+  }
+]

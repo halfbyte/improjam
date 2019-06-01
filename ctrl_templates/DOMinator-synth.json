@@ -1,0 +1,37 @@
+[
+  {
+    "name": "Cutoff",
+    "cc": 6
+  },
+  {
+    "name": "Resonance",
+    "cc": 7
+  },
+  {
+    "name": "Flt Env",
+    "cc": 8
+  },
+  {
+    "name": "SQ <> SAW",
+    "cc": 9
+  },
+  {
+    "name": "---",
+    "cc": 75
+  },
+  {
+    "name": "Reverb",
+    "cc": 2,
+    "channel": 9
+  },
+  {
+    "name": "Delay",
+    "cc": 3,
+    "channel": 9
+  },
+  {
+    "name": "Filter",
+    "cc": 4,
+    "channel": 9
+  }
+]

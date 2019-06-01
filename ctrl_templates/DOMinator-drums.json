@@ -1,0 +1,39 @@
+[
+  {
+    "name": "---",
+    "cc": 75
+  },
+  {
+    "name": "---",
+    "cc": 75
+  },
+  {
+    "name": "---",
+    "cc": 75
+  },
+  {
+    "name": "BitCount",
+    "cc": 5,
+    "channel": 7
+  },
+  {
+    "name": "BitRate",
+    "cc": 6,
+    "channel": 7
+  },
+  {
+    "name": "Reverb",
+    "cc": 2,
+    "channel": 7
+  },
+  {
+    "name": "Delay",
+    "cc": 3,
+    "channel": 7
+  },
+  {
+    "name": "Filter",
+    "cc": 4,
+    "channel": 7
+  }
+]

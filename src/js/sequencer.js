@@ -64,7 +64,6 @@ export default class Sequencer {
     if (version == null) {
       const newTracks = this.makeBlankTracksData()
       // convert from old timebase
-      console.log('Converting timebase')
       data.forEach((track, trackIndex) => {
         track.data.forEach((notes, tick) => {
           const step = Math.round(tick / 24)
@@ -152,7 +151,7 @@ export default class Sequencer {
   }
   // This is for internal sync
   scheduleNextNotes () {
-    if (this.syncMode == 'sync-in') { return }
+    if (this.syncMode === 'sync-in') { return }
     this.realTempo = this.tempo
     let i
     const currentTime = performance.now()
@@ -415,7 +414,6 @@ export default class Sequencer {
         let oldParam = foundNote[param]
         if (oldParam == null) { oldParam = PARAM_LIMITS[param][2] !== null ? PARAM_LIMITS[param][2] : PARAM_LIMITS[param][0] }
         const newParam = this.clampParamToLimits(oldParam + increment, param)
-        console.log(increment, oldParam, newParam)
         const newNotes = notes.map((note) => {
           if (note.note === drumNote) {
             note[param] = newParam
@@ -427,7 +425,6 @@ export default class Sequencer {
         let oldParam = notes[0][param]
         if (oldParam == null) { oldParam = PARAM_LIMITS[param][2] !== null ? PARAM_LIMITS[param][2] : PARAM_LIMITS[param][0] }
         const newParam = this.clampParamToLimits(oldParam + increment, param)
-        console.log(increment, oldParam, newParam)
         const newNotes = notes.map((note) => {
           note[param] = newParam
           return note

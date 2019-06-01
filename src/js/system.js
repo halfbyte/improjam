@@ -123,12 +123,18 @@ class MIDISystem extends Eventable {
   channelMessage (channel, data, deviceName) {
     if (data[0] === 248) { }
   }
-  sendChannelMessage (track, data, time) {
-    console.log('CHMSG', track, data, time)
+  sendChannelMessage (track, data, time, channel) {
+    console.log('CHMSG', track, data, time, channel)
     if (this.soloChannel != null && this.soloChannel !== track) { return }
     if (this.channels[track].muted && this.soloChannel !== track) { return }
 
-    data[0] = data[0] | this.channels[track].outputChannel
+    let outChannel = this.channels[track].outputChannel
+
+    if (channel != null) {
+      outChannel = channel
+    }
+
+    data[0] = data[0] | outChannel
     if (this.outputs[this.channels[track].outputDevice]) {
       if (time === 0) { time = performance.now() }
       this.outputs[this.channels[track].outputDevice].send(data, time)
@@ -143,13 +149,13 @@ class MIDISystem extends Eventable {
       this.channels[channel].controlSlots[slot] = newValue
       const cfg = this.channels[channel].ctrlConfig[slot]
       if (cfg.cc != null) {
-        this.sendChannelMessage(channel, [0xb0, cfg.cc, newValue], 0)
+        this.sendChannelMessage(channel, [0xb0, cfg.cc, newValue], 0, cfg.channel)
       }
       if (cfg.nrpn != null) {
         const [msb, lsb] = cfg.nrpn
-        this.sendChannelMessage(channel, [0xb0, 99, msb], 0)
-        this.sendChannelMessage(channel, [0xb0, 98, lsb], 0)
-        this.sendChannelMessage(channel, [0xb0, 6, newValue], 0)
+        this.sendChannelMessage(channel, [0xb0, 99, msb], 0, cfg.channel)
+        this.sendChannelMessage(channel, [0xb0, 98, lsb], 0, cfg.channel)
+        this.sendChannelMessage(channel, [0xb0, 6, newValue], cfg.channel)
       }
     }
   }

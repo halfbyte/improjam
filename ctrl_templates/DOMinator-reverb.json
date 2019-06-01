@@ -1,0 +1,37 @@
+[
+  {
+    "name": "Roomsize",
+    "cc": 1
+  },
+  {
+    "name": "Dampening",
+    "cc": 2
+  },
+  {
+    "name": "---",
+    "cc": 75
+  },
+  {
+    "name": "BitCount",
+    "cc": 5,
+    "channel": 13
+  },
+  {
+    "name": "BitRate",
+    "cc": 6,
+    "channel": 13
+  },
+  {
+    "name": "---",
+    "cc": 75
+  },
+  {
+    "name": "---",
+    "cc": 75
+  },
+  {
+    "name": "Filter",
+    "cc": 4,
+    "channel": 13
+  }
+]
