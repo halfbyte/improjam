@@ -355,8 +355,8 @@ export default class Sequencer {
       })
 
       const offTime = this.realTick
-      const onRounded = Math.round(openNote[0] / 24)
-      var offRounded = Math.round(offTime / 24)
+      const onRounded = Math.round(openNote[0] / 6)
+      var offRounded = Math.round(offTime / 6)
       if (offRounded < onRounded) {
         offRounded += 256
       }
