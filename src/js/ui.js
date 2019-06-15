@@ -2,7 +2,7 @@
 import { maxInSet, minInSet } from './in-set.js'
 const m = require('mithril')
 
-const REPEAT_MODE = [24 * 4, 18 * 4, 12 * 4, 9 * 4, 6 * 4, 18, 12, 9]
+const REPEAT_MODE = [24, 18, 12, 9, 6]
 
 const COLOR_NAMES = {
   pattern: 'red',

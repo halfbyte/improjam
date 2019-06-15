@@ -1,18 +1,18 @@
 [
   {
-    "name": "Reverb",
+    "name": "Filter",
     "cc": 71
   },
   {
-    "name": "Echo",
+    "name": "Resonance",
     "cc": 72
   },
   {
-    "name": "Filter",
+    "name": "Filter LFO",
     "cc": 73
   },
   {
-    "name": "Ctrl 4",
+    "name": "Sidechain",
     "cc": 74
   },
   {

@@ -151,7 +151,10 @@ export default class Sequencer {
   }
   // This is for internal sync
   scheduleNextNotes () {
-    if (this.syncMode === 'sync-in') { return }
+    if (this.syncMode === 'sync-in') { 
+      this.tickWorker.postMessage('request-tick')
+      return 
+    }
     this.realTempo = this.tempo
     let i
     const currentTime = performance.now()
@@ -197,7 +200,7 @@ export default class Sequencer {
 
     var swingOff = 0
     if (this.tick % 12 === 6) {
-      swingOff = this.swing / 2.0
+      swingOff = this.swing / 8.0
     }
     // The actual start time for the current step
     const time = straightTime + (perTick * swingOff)
@@ -302,7 +305,7 @@ export default class Sequencer {
     }
   }
   // for realtime recording
-  addNote (track, time, note, velocity = 100, length = 24) {
+  addNote (track, time, note, velocity = 100, length = 6) {
     if (this.tracks[track].data[time]) {
       const existing = this.tracks[track].data[time].find((n) => {
         return n.type === 'note' && n.note === note
