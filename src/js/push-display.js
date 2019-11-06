@@ -104,7 +104,6 @@ export default class PushDisplay {
     } else if (this.system.matrixView && this.system.matrixView.controllerMode) {
       for (var slot = 0; slot < 8; slot++) {
         const slotValue = this.system.channels[this.system.matrixView.selectedChannel].controlSlots[slot]
-        const channel = this.system.channels[this.system.matrixView.selectedChannel] // .outputChannel
         const ctrlName = this.system.channels[this.system.matrixView.selectedChannel].ctrlConfig[slot].name
         const width = slotValue / 127.0 * 110
         ctx.fillStyle = '#ccc'
@@ -114,6 +113,16 @@ export default class PushDisplay {
         ctx.fillText(`${slotValue}`, 120 * slot + 60, 47)
         ctx.fillText(ctrlName, 120 * slot + 60, 67)
       }
+      // 9th control (volume knob)
+      const slotValue = this.system.channels[this.system.matrixView.selectedChannel].controlSlots[8]
+      const ctrlName = this.system.channels[this.system.matrixView.selectedChannel].ctrlConfig[8].name
+      const width = slotValue / 127.0 * 110
+      ctx.fillStyle = '#ccc'
+      ctx.fillRect(5 + (120 * 7), 75, width, 20)
+      ctx.textAlign = 'center'
+      ctx.fillStyle = '#fff'
+      ctx.fillText(`${slotValue}`, 120 * 7 + 60, 75 + 17)
+      ctx.fillText(ctrlName, 120 * 7 + 60, 75 + 37)
     }
 
     ctx.fillStyle = '#ccc'

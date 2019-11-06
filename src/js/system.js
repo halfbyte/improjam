@@ -362,7 +362,7 @@ class MIDISystem extends Eventable {
         dialogs.alert(`Error loading template: ${err}`)
       } else {
         const parsed = JSON.parse(data)
-        this.channels[track].ctrlConfig = parsed
+        this.channels[track].setCtrlConfig(parsed)
         m.redraw()
       }
     })

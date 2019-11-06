@@ -11,7 +11,8 @@ const DEFAULT_CTRL_CONFIG = [
   { 'name': 'Ctrl 5', 'cc': '75' },
   { 'name': 'Ctrl 6', 'cc': '76' },
   { 'name': 'Ctrl 7', 'cc': '77' },
-  { 'name': 'Ctrl 8', 'cc': '78' }
+  { 'name': 'Ctrl 8', 'cc': '78' },
+  { 'name': 'Ctrl 9', 'cc': '79' }
 ]
 
 const DEFAULT_CHANNEL_CONFIG = {
@@ -26,7 +27,7 @@ export default class Channel {
   constructor (config, system) {
     this.system = system
     this.onmidimessage = this.onmidimessage.bind(this)
-    this.controlSlots = [0, 0, 0, 0, 0, 0, 0, 0]
+    this.controlSlots = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     this.setConfig(config)
   }
   attachListeners () {
@@ -47,6 +48,12 @@ export default class Channel {
       }
     }
   }
+  setCtrlConfig (ctrlConfig) {
+    this.ctrlConfig = ctrlConfig
+    if (this.ctrlConfig[8] == null) {
+      this.ctrlConfig[8] = DEFAULT_CHANNEL_CONFIG.ctrlConfig[8]
+    }
+  }
   setConfig (config) {
     const firstOutputDevice = Object.keys(this.system.outputs)
     const firstInputDevice = Object.keys(this.system.inputs)
@@ -56,6 +63,11 @@ export default class Channel {
     this.outputChannel = config.outputChannel || DEFAULT_CHANNEL_CONFIG.outputChannel
     this.sequencerMode = config.sequencerMode || DEFAULT_CHANNEL_CONFIG.sequencerMode
     this.ctrlConfig = config.ctrlConfig || DEFAULT_CHANNEL_CONFIG.ctrlConfig
+    // migrate from old templates
+    console.log(this.ctrlConfig[8])
+    if (this.ctrlConfig[8] == null) {
+      this.ctrlConfig[8] = DEFAULT_CHANNEL_CONFIG.ctrlConfig[8]
+    }
     this.muted = !!config.muted
     this.attachListeners()
     this.name = config.name

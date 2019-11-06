@@ -185,7 +185,7 @@ export default class PushDriver extends Eventable {
       } else if (cc === 15) {
         const signed = val < 64 ? val : val - 128
         this.trigger('push:swing', signed)
-      } else if (cc >= 71 && cc <= 78) {
+      } else if (cc >= 71 && cc <= 79) {
         const signed = val < 64 ? val : val - 128
         this.trigger('push:encoder', cc - 71, signed)
       } else if (cc >= 36 && cc <= 43 && val > 0) {
