@@ -29,7 +29,7 @@
     "abletonlink": "0.0.7",
     "electron-reload": "^1.2.5",
     "mime-types": "^2.1.18",
-    "mithril": "^1.1.6"
+    "mithril": "^1.1.7"
   },
   "devDependencies": {
     "dialogs": "^1.1.20",
